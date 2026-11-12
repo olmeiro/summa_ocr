@@ -1,5 +1,6 @@
 """El harness también se prueba: los hooks deben bloquear lo que prometen."""
 
+import importlib.util
 import json
 import subprocess
 import sys
@@ -8,6 +9,21 @@ from pathlib import Path
 import pytest
 
 HOOKS = Path(__file__).resolve().parents[1] / ".claude" / "hooks"
+
+
+def test_gate_al_parar_prefiere_el_python_del_venv(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    spec = importlib.util.spec_from_file_location("gate_al_parar", HOOKS / "gate_al_parar.py")
+    assert spec is not None and spec.loader is not None
+    modulo = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(modulo)
+    monkeypatch.setattr(modulo, "VENV", tmp_path)
+    assert modulo.interprete() == sys.executable  # sin .venv, el Python que lanzó el hook
+    python = tmp_path / "Scripts" / "python.exe"
+    python.parent.mkdir()
+    python.touch()
+    assert modulo.interprete() == str(python)
 
 
 def ejecutar(hook: str, payload: object) -> int:
