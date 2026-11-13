@@ -12,7 +12,7 @@ Se añade una entrada cuando una decisión debe respetarse en varias features, c
 - **Fecha**: 2026-11-12
 - **Introducida en**: Constitución (`init/constitucion`)
 - **Aplica a**: todo el paquete, su `pyproject.toml` y las dos plantillas que lo instalan
-- **Estado**: vigente
+- **Estado**: vigente; la regla 3 y su verificación de fronteras están reemplazadas por DEC-002
 
 ### Contexto
 
@@ -47,3 +47,49 @@ Una sola librería con estas reglas:
 - **Humo por extra**: en un entorno limpio, instalar la wheel con **solo** ese extra e importar los módulos que usa ese consumidor. Si un import necesita otro extra, la prueba falla. Lo introduce LIB-01.
 - **Fronteras de import (regla 3)**: un test que recorre los imports de los módulos de datos y de agentes y falla si cruzan la frontera. Lo introduce LIB-01.
 - **Dependencias**: el revisor comprueba en cada PR que `pyproject.toml` no añade al grupo obligatorio dependencias de un solo consumidor.
+
+---
+
+## DEC-002 — Fronteras de import: módulos comunes, de workflow y de agente
+
+- **Fecha**: 2026-11-13
+- **Introducida en**: Constitución (`init/constitucion`)
+- **Aplica a**: `src/<paquete>/`, los extras de `pyproject.toml` y el test de fronteras de LIB-01
+- **Estado**: vigente
+- **Reemplaza**: la regla 3 de DEC-001 y su verificación de fronteras
+
+### Contexto
+
+La regla 3 de DEC-001 separa módulos de datos y de agentes y prohíbe los imports en los dos sentidos. Al contrastarla con la base de referencia no se sostiene:
+
+- La herramienta RAG vive en `agents` y necesita `vectordb` y `embeddings` (`BaseRef/cognitive/agents/tools/retrieval.py:12-13`). Con la regla 3, LIB-17 no se puede implementar.
+- La memoria del agente necesita Cosmos DB, que el tech-stack ubicaba en `storage`, un módulo de datos. En la base el cliente de Cosmos de la memoria vive con la memoria (`BaseRef/cognitive/agents/memory/cosmos_db.py`).
+- El validador JWT de la base importa FastAPI desde la librería común (`BaseRef/core/security/authentication.py:6-7`): por eso FastAPI llega al clúster de Databricks.
+- El LLM de la base depende de LangChain (`BaseRef/cognitive/llms/protocols.py`), que el workflow no necesita.
+
+### Decisión
+
+Tres grupos de módulos `[inferido]`:
+
+| Grupo | Módulos | Dependencias |
+|---|---|---|
+| Comunes | `config`, `security`, `observability`, `llms`, `embeddings`, `vectordb` | Solo las obligatorias |
+| Workflow | `storage`, `workflow`, `extraction`, `processing`, `sources` | Extra del workflow |
+| Agente | `auth`, `agents`, `mcp` | Extra del agente |
+
+1. Los grupos de workflow y de agente importan de los comunes. Nunca se importan entre sí.
+2. Los módulos comunes no importan de ninguno de los otros dos grupos.
+3. Cosmos DB vive en `agents/memory`, no en `storage`. `storage` es solo Unity Catalog.
+4. El validador JWT vive en `auth` y no importa el framework web: el middleware lo pone la plantilla.
+5. `llms` y `embeddings` usan el SDK de `openai`. El modelo con herramientas para LangGraph se construye en `agents`.
+6. `observability` es solo el logger. El registro de ejecución en Unity Catalog vive en `workflow`.
+
+### Alternativas descartadas
+
+- **Mantener la regla 3 y mover la herramienta RAG a la plantilla del agente**: cada caso de uso clonado quedaría con su copia, que es lo que la librería evita ([[mission]] §2).
+- **Duplicar la consulta a AI Search en `agents`**: dos implementaciones del mismo servicio, contra [[mission]] §5.
+
+### Cómo se verifica
+
+- **Fronteras de import**: un test recorre los imports y falla si un módulo de workflow importa uno de agente o al revés, o si un módulo común importa de cualquiera de los dos. Lo introduce LIB-01.
+- **Humo por extra** de DEC-001: con solo el extra del workflow no se pueden importar `auth`, `agents` ni `mcp`, y con solo el del agente no se importan los módulos de workflow.

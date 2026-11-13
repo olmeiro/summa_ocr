@@ -25,25 +25,26 @@ Cada caso de uso clona este repo y configura sus propios jobs (SyN, etapa 7).
 La plantilla aporta bundle, manifest, steps y configuración. La lógica común la entrega `repo-libreria` (decisión de la persona). Lo pide SyN (arquitectura §1 y etapa 5), salvo donde se indica:
 
 - **Bundle**: `databricks.yml` con targets dev y prod y clúster efímero, y `resources/workflow.yml` con las tareas, sus dependencias y la librería en versión fija.
-- **Manifest/DAG**: `requires`/`provides` de cada step y zona medallion; el registro de steps es la carpeta `src/steps/`.
-- **ConfigFile** por iniciativa: fuente, extracción, chunking, embeddings e índice.
-- **Logs y auditoría**: tablas de logs en Unity Catalog con esquema y particionado definidos, `run_id`, timestamps y causa de error por ejecución y por documento.
-- **Descubrimiento**: clasificación de los archivos que llegan a bronze por tipo, en textual, tabular e imágenes. `[inferido]` de `BaseRef/workflow/docs/pipeline-steps.md`, `s00_discovery`.
+- **Manifest/DAG**: `requires`/`provides` de cada step y zona medallion; el registro de steps es la carpeta `src/steps/`. La plantilla aporta el manifest, el patrón de step y el test que lo compara con las dependencias del job; la lógica que lo lee es de la librería.
+- **ConfigFile** por iniciativa y por ambiente: fuente, extracción, chunking, embeddings e índice.
+- **Logs y auditoría**: tablas de logs en Unity Catalog con esquema y particionado definidos, `run_id`, timestamps y causa de error por ejecución y por documento, con su tarea de creación y mantenimiento.
+- **Descubrimiento**: clasificación de los archivos que llegan a bronze por tipo, en textual, tabular e imágenes. `[inferido]` de `BaseRef/workflow/docs/pipeline-steps.md`, `s00_discovery`. Un archivo de tipo no soportado queda registrado con su causa.
 - **Fuente por API** (decisión de la persona): step que usa el cliente HTTP de la librería para descargar el binario y los metadatos a bronze. El conector concreto de cada fuente es configuración del caso de uso.
-- **Estrategia incremental**: detección de documentos nuevos, modificados y eliminados, y su reflejo en el índice (SyN, etapa 4). La base no lo trae.
+- **Estrategia incremental**: detección de documentos nuevos, modificados y eliminados, y su reflejo en silver y en el índice (SyN, etapa 4). Necesita un estado por documento que persista entre ejecuciones. La base no lo trae: reprocesa todo en tablas nuevas cada vez.
 - **Extracción con Content Understanding** (decisión de la persona): PDF nativos, escaneados e imágenes van al analizador de la iniciativa. A silver llegan el markdown y los campos con su confianza y su página (EjOCR, `src/extractor.py:39-49`).
 - **Métricas de calidad** de la extracción por documento, categoría y campo (completitud y confianza), como las que el ejercicio calculó aparte (EjOCR, `output/resumen_*.csv`). `[inferido]`
 - **Excel**: procesamiento de datos estructurados.
 - **"Process Files con OpenAI"**: procesamiento de archivos con un modelo de Azure OpenAI.
 - **Chunking** con la estrategia que elija el ConfigFile: por tokens, por estructura o semántica.
 - **Embeddings** con Azure OpenAI.
-- **Indexación en Azure AI Search**: crear o actualizar el índice desde el ConfigFile, upsert idempotente y campos filtrables con los metadatos de la fuente y los campos extraídos que elija el caso de uso. `[inferido]` de SyN, etapa 7 (filtros por tipo, partes, fecha e ID).
-- **Trigger** del job según el ConfigFile: programado, periódico o por llegada de archivos (`BaseRef/workflow/docs/triggers.md`).
+- **Indexación en Azure AI Search**: crear o actualizar el índice desde el ConfigFile, upsert idempotente, retiro de los chunks que sobran cuando un documento cambia y campos filtrables con los metadatos de la fuente y los campos extraídos que elija el caso de uso. `[inferido]` de SyN, etapa 7 (filtros por tipo, partes, fecha e ID).
+- **Trigger** del job declarado en el bundle: programado, periódico o por llegada de archivos (`BaseRef/workflow/docs/triggers.md`).
 - **Pipelines de Azure DevOps**, documentación técnica y guía de onboarding (SyN, etapas 1 y 5).
 
 ### No entra
 
-- **Clientes de servicios y lógica genérica**: Content Understanding, chunking, AI Search, fuentes HTTP y trazabilidad están en `repo-libreria`.
+- **Clientes de servicios y lógica genérica**: Content Understanding, chunking, AI Search, fuentes HTTP, almacenamiento en Unity Catalog, lectura del manifest y trazabilidad están en `repo-libreria`.
+- **Dockerfile**: SyN, etapa 1, lo lista en la estructura base de este repo, pero los jobs corren en clústeres de Databricks desplegados con el bundle. `[inferido]`
 - **El conector concreto de Control Doc**, su configuración y su esquema de contratos: van en el repo del caso de uso (decisión de la persona; SyN, etapa 7).
 - **Indexar el corpus de Control Doc** y ajustar su chunking y su perfil de scoring (SyN, etapa 7).
 - **Validación humana** de los campos extraídos y su carga en sistemas destino (`Control Doc/Campo Extraccion de Contratos.xlsx`, hoja "Caso de Uso", Alcance).
@@ -58,6 +59,8 @@ La plantilla aporta bundle, manifest, steps y configuración. La lógica común 
 - PENDIENTE: ¿qué pasa con un campo extraído con confianza baja: se indexa igual, se marca o se descarta? ¿Con qué umbral?
 - PENDIENTE: ¿los documentos Word van directo a Content Understanding o se convierten antes a PDF? El ejercicio solo envió PDF (EjOCR, `src/extractor.py:42`).
 - PENDIENTE: ¿la ejecución es programada (con qué frecuencia), periódica o por llegada de archivos? SyN, §4, lo deja abierto.
+- PENDIENTE: ¿qué produce "Procesar Excel (Data Estructurada)" (SyN, etapa 5): una tabla en silver o gold para consultarla, o texto por fila para indexarlo? La base hace lo segundo y exige una columna `content` en cada hoja (`BaseRef/workflow/src/steps/s01_tabular_ingestion.py:137`).
+- PENDIENTE: ¿qué hace "Process Files con OpenAI" (SyN, etapa 5) si Content Understanding ya extrae los campos: aplicar un prompt configurable sobre el markdown de silver (resumen, clasificación)? ¿Dónde se guarda su salida y se indexa?
 
 ## 3. Dependencias externas
 
@@ -75,18 +78,19 @@ La plantilla aporta bundle, manifest, steps y configuración. La lógica común 
 ### Greenfield: activos heredados
 
 - **Harness** (`scripts/`, `.claude/`, `specs/`, `AGENTS.md`): se mueve desde la raíz de `summa_ocr`; el gate y el revisor se portan a Azure Pipelines.
-- **BaseRef**, guía de diseño sin copiar código (decisión de la persona):
+- **BaseRef**, guía de diseño sin copiar código (decisión de la persona). Qué cambia en cada activo está en [[roadmap]] §4:
 
 | Activo de referencia | Guía para |
 |---|---|
 | `BaseRef/workflow/docs/architecture.md` | Job como DAG de tareas en clúster efímero, medallion y patrón de ejecución de un step |
-| `BaseRef/workflow/databricks.yml` y `resources/workflow.yml` | Bundle por targets y definición del job |
-| `BaseRef/workflow/config/workflow_manifest.yaml` y `config.yaml` | Manifest `requires`/`provides` y ConfigFile |
+| `BaseRef/workflow/databricks.yml` y `resources/workflow.yml` | Bundle por targets y definición del job. Sus credenciales en claro no se reproducen |
+| `BaseRef/workflow/config/workflow_manifest.yaml` y `config.yaml` | Manifest (allí `inputs`/`outputs`) y ConfigFile |
 | `BaseRef/workflow/src/steps/` y `docs/pipeline-steps.md` | Steps de discovery, ingesta, chunking, embeddings e indexación |
 | `BaseRef/workflow/docs/triggers.md` | Opciones de trigger del job |
 
 - **EjOCR** (referencia para el step de extracción y para el caso de uso):
   - `src/extractor.py`: llamada a Content Understanding con un analizador por ID.
+  - `data/processed/*.json`: forma del resultado (markdown, campos con confianza, página y posición). Los 35 documentos de la muestra son PDF.
   - `schema_contratos.json`: ejemplo del formato de esquema (12 categorías, 76 campos). El esquema real es del caso de uso.
   - `src/auditor.py` y `logs/trazabilidad_extraccion.json`: estado por documento → se reemplaza por las tablas de logs.
   - `output/resumen_*.csv` e `informe_extraccion_por_documento.Rmd`: completitud y confianza → métricas de calidad.
@@ -97,7 +101,7 @@ La plantilla aporta bundle, manifest, steps y configuración. La lógica común 
 ## 5. Coordinación con otros equipos o sistemas
 
 - **`repo-libreria`**: cada step que necesita una capacidad nueva depende de la feature `LIB-NN` que la entrega y de su publicación.
-- **`repo-agente-conversacional`**: contrato del índice (campos, enlace al documento, campos filtrables y modelo de embeddings) antes de la feature 09.
+- **`repo-agente-conversacional`**: contrato del índice (campos, enlace al documento, página, campos filtrables y modelo de embeddings) antes de la feature 09. Se acuerda como la definición del índice que valida la librería (LIB-11) y que las dos plantillas copian en su configuración.
 - **TI de SUMMA y administradores de Control Doc**: credencial de servicio, documentación de la API y límites de uso.
 - **Plataforma y arquitectura de datos**: workspace, catálogos, permisos y red por ambiente.
 

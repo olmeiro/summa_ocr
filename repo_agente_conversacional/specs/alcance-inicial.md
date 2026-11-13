@@ -30,8 +30,8 @@ La plantilla aporta endpoints, configuración y puntos de extensión. La lógica
 - **Estructura base**: `app/`, `main.py`, `settings.py`, `requirements.txt` y `Dockerfile`, con la librería en versión fija.
 - **Configuración**: `config/config_<ambiente>.yaml` con secretos referenciados en Key Vault.
 - **Autenticación**: middleware que valida tokens JWT y rechaza las peticiones sin token válido.
-- **Sesiones**: endpoints para crear, listar y leer el historial, persistido en Cosmos DB.
-- **Conversación**: endpoint que recibe un mensaje, ejecuta el agente (planner + executor) con el historial de la sesión y devuelve la respuesta con sus fuentes.
+- **Sesiones**: endpoints para crear, listar y leer el historial, persistido en Cosmos DB. Cada usuario accede solo a sus sesiones. `[inferido]` de `BaseRef/agent/app/api/v1/sessions.py:81-84`.
+- **Conversación**: endpoint que recibe un mensaje, ejecuta el agente (planner + executor) con el historial de la sesión y devuelve la respuesta con sus fuentes como datos (documento, página y enlace), para que el canal arme la cita (SyN, arquitectura §3 y etapa 8).
 - **Prompt principal** en `config/prompts/`, parametrizable por caso de uso.
 - **Identificación de entidades** antes de invocar herramientas, configurable por caso de uso.
 - **Herramienta RAG** configurada desde el YAML: índice, filtros por metadatos y campos de cita y enlace (SyN, arquitectura §3).
@@ -50,11 +50,17 @@ La plantilla aporta endpoints, configuración y puntos de extensión. La lógica
 - **Capacidades de la base que SyN no pide** (decisión de la persona; quedan para replanning):
   - voto de respuestas, A2A y herramienta SQL;
   - métricas Prometheus y alertas;
-  - evaluación con golden set, fairness y ragas o deepeval, y endpoint de tokens de desarrollo.
+  - evaluación con golden set, fairness y ragas o deepeval, y endpoint de tokens de desarrollo;
+  - el modo sin autenticación con usuario falso y el driver ODBC de su imagen.
 - **Canales distintos de Teams**: web, móvil, WhatsApp (SyN, "Fuera de alcance").
 - **Infraestructura como código de los recursos transversales** (SyN, etapa 1).
 - **Pruebas de calidad de respuestas y de carga del caso de uso** (SyN, etapa 8).
 - **Interpretación legal** y dashboards (SyN, "Fuera de alcance").
+
+### Por decidir
+
+- PENDIENTE: ¿una sesión nace con un endpoint propio antes del primer mensaje, como en la plantilla de la base (`BaseRef/agent/app/api/v1/chat.py:44-45`), o al primer mensaje con el identificador de conversación que traiga el canal? La librería de la base la crea si falta (`BaseRef/cognitive/agents/implementation.py:87-96`), así que sus dos capas no coinciden.
+- El significado de "planner + executor" está como `PENDIENTE` en el alcance de `repo-libreria` (§2): el grafo de la base es un ciclo agente ↔ herramientas.
 
 ## 3. Dependencias externas
 
@@ -74,11 +80,12 @@ La plantilla aporta endpoints, configuración y puntos de extensión. La lógica
 
 - **Harness** (`scripts/`, `.claude/`, `specs/`, `AGENTS.md`): se mueve desde la raíz de `summa_ocr`; el gate y el revisor se portan a Azure Pipelines.
 - **SyN**: arquitectura, alcance y plan de trabajo de referencia.
-- **BaseRef**: guía de diseño, sin copiar código (decisión de la persona).
+- **BaseRef**: guía de diseño, sin copiar código (decisión de la persona). Qué cambia en cada activo está en [[roadmap]] §4.
 
 | Activo de referencia | Guía para |
 |---|---|
 | `BaseRef/agent/docs/architecture.md` | Capas API, core, agente y middleware; punto único de creación del agente |
+| `BaseRef/agent/app/core/agent_builder.py:121-196` y `dependencies.py:78-170` | Creación del agente y ciclo de vida de los servicios |
 | `BaseRef/agent/app/api/v1/` (`chat.py`, `sessions.py`, `health.py`, `schemas.py`) | Endpoints de conversación, sesiones y salud |
 | `BaseRef/agent/app/core/settings.py` y `config/` | Settings por variables de entorno y YAML por ambiente |
 | `BaseRef/agent/app/agent/` (`tools.py`, `graph.py`) | Puntos de extensión del caso de uso |
@@ -87,7 +94,7 @@ La plantilla aporta endpoints, configuración y puntos de extensión. La lógica
 ## 5. Coordinación con otros equipos o sistemas
 
 - **`repo-libreria`**: cada feature que necesita una capacidad nueva depende de la feature `LIB-NN` que la entrega y de su publicación.
-- **`repo-workflow`**: contrato del índice (campos, campo de enlace al documento, campos filtrables, modelo de embeddings) antes de la feature 07.
+- **`repo-workflow`**: contrato del índice (campos, campo de enlace al documento, página, campos filtrables, modelo de embeddings) antes de la feature 07. Se acuerda como la definición del índice que valida la librería (LIB-11) y que las dos plantillas copian en su configuración.
 - **Plataforma e IaC**: nombres de recursos, identidades administradas, red y permisos por ambiente.
 - **TI de SUMMA**: App Registration, permisos de Graph y publicación de la app en Teams.
 

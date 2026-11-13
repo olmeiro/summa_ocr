@@ -17,8 +17,10 @@
 
 - Lint, formato, tipos y tests los verifica el gate: `python scripts/gate.py`, configurado en `pyproject.toml` (ruff con reglas `FAST`, `ASYNC` y `S`; mypy en modo estricto; pytest). Al crear `app/`, se añade a `[tool.mypy] files`.
 - La capa API no tiene lógica de negocio: valida, delega en el agente y responde (`BaseRef/agent/docs/architecture.md`, "Capa API").
-- El agente se crea en un solo punto, que usan los endpoints y cualquier script. `[inferido]` de `BaseRef/agent/app/core/agent_builder.py`.
-- Endpoints `async`; nada bloqueante dentro del event loop (regla `ASYNC` del gate).
+- El agente se crea en un solo punto, que usan los endpoints y cualquier script. `[inferido]` de `BaseRef/agent/app/core/agent_builder.py:121-196`. Los servicios se crean al arrancar la app y se cierran al apagarla (`BaseRef/agent/app/core/dependencies.py:78-170`).
+- Endpoints `async`; nada bloqueante dentro del event loop (regla `ASYNC` del gate). La herramienta RAG de la base calcula el embedding de la consulta de forma síncrona (`BaseRef/cognitive/agents/tools/retrieval.py:83`).
+- Los valores por defecto son los de producción: sin modo debug, sin documentación interactiva y sin CORS abierto. `[inferido]`: en la base `debug` viene activo y CORS acepta cualquier origen con credenciales (`BaseRef/agent/app/core/settings.py:45-46`, `72`). El canal llama de servidor a servidor.
+- Un error interno responde con un mensaje genérico y deja el detalle en el log. `[inferido]`: el endpoint de conversación de la base devuelve el texto de la excepción (`BaseRef/agent/app/api/v1/chat.py:70`).
 - Imports, `config_<ambiente>.yaml`, prompts y pipelines usan nombres de SUMMA. Nada importa paquetes de la base ni conserva sus nombres (decisión de la persona, 2026-11-12).
 - Docstrings, mensajes de error y commits en español (`orden_spec.md` §11). El formato de errores HTTP se decide en la feature que lo introduce y se registra en [[decisions]].
 
@@ -43,8 +45,8 @@ requirements.txt
 
 ## 4. Interfaces expuestas
 
-- **Conversación**: endpoint que recibe un mensaje de una sesión y devuelve la respuesta con sus fuentes. Lo consume el canal (Teams vía Azure Bot Service; SyN, etapa 8).
-- **Sesiones**: crear, listar y leer el historial de una sesión (`BaseRef/agent/docs/architecture.md`, `sessions.py`).
+- **Conversación**: endpoint que recibe un mensaje de una sesión y devuelve la respuesta con sus fuentes como datos (documento, página y enlace). Lo consume el canal (Teams vía Azure Bot Service; SyN, etapa 8). La respuesta de la base solo trae el texto (`BaseRef/agent/app/api/v1/schemas.py:18-22`).
+- **Sesiones**: crear, listar y leer el historial de una sesión (`BaseRef/agent/app/api/v1/sessions.py:22-112`). Una sesión solo la lee y la usa su dueño.
 - **Salud**: endpoints de vida y disponibilidad para las validaciones posteriores al despliegue (SyN, etapa 6).
 - **Contrato**: el OpenAPI que genera FastAPI. Las rutas concretas se fijan en cada feature.
 
@@ -67,7 +69,7 @@ Ninguna todavía.
 | Azure OpenAI (vía Azure AI Foundry) | LLM del orquestador y embeddings de la consulta | Según el `tech-stack.md` §6 de `repo-libreria`. PENDIENTE: ¿qué deployments de chat y embeddings? |
 | Azure AI Search | Recuperación sobre los índices de `repo-workflow` | Ídem |
 | Azure Cosmos DB | Historial de conversación por sesión | Ídem |
-| Azure Key Vault | Secretos referenciados desde `config_<ambiente>.yaml` | PENDIENTE: ¿identidad administrada del Container App? |
+| Azure Key Vault | Secretos referenciados desde `config_<ambiente>.yaml` | PENDIENTE: ¿identidad administrada del Container App? La base usa un service principal cuyo secreto inyecta el pipeline (`BaseRef/agent/Pipeline/variables/qa-vars.yml:12`) |
 | Azure Container Registry | Imágenes del agente | Service connection de Azure DevOps |
 | Azure Container Apps | Hosting del backend (decisión de la persona) | — |
 | Azure Artifacts | Instalación de la librería en el build | Service connection de Azure DevOps |
@@ -87,9 +89,10 @@ Ninguna todavía.
 
 ## 9. Seguridad
 
-- **Autenticación**: middleware que valida tokens JWT en cada petición con el validador OIDC de la librería (SyN, etapa 6). PENDIENTE: ¿emisor y audiencia del token (Entra ID, Bot Service)?
-- **Autorización**: PENDIENTE: ¿se restringen las respuestas según el usuario o el área que pregunta, o todos ven todo el índice?
-- **Sin endpoints de depuración en producción**: la base trae un emisor de tokens para desarrollo (`BaseRef/agent/docs/architecture.md`, `auth.py`); aquí no se incluye.
+- **Autenticación**: middleware que valida tokens JWT en cada petición con el validador OIDC de la librería (SyN, etapa 6). Los endpoints de salud quedan fuera. PENDIENTE: ¿emisor y audiencia del token (Entra ID, Bot Service)? ¿El token identifica al usuario final o al servicio del canal? Si es el servicio, ¿de dónde sale el usuario al que pertenece la sesión? La base lo toma del `oid` del token (`BaseRef/core/security/authentication.py:116`).
+- **Autorización**: una sesión solo la lee y la usa su dueño: 404 si no existe y 403 si es de otro (`[inferido]` de `BaseRef/agent/app/api/v1/sessions.py:81-84`). PENDIENTE: ¿se restringen las respuestas según el usuario o el área que pregunta, o todos ven todo el índice?
+- **Sin modo sin autenticación ni endpoints de depuración**: la base trae un emisor de tokens para desarrollo (`BaseRef/agent/app/api/v1/auth.py`) y un usuario administrador falso cuando la autenticación está desactivada (`BaseRef/agent/app/core/dependencies.py:244-252`); aquí no se incluyen. En los tests se sustituye el validador por su doble.
+- **Imagen**: la credencial del feed no se pasa como `ARG` del build, porque queda en el historial de la imagen (`BaseRef/agent/Dockerfile:6`). `[inferido]`
 - **Validación de entrada**: modelos de FastAPI en cada endpoint; nada del usuario llega sin validar a filtros de búsqueda ni a herramientas.
 - **Prompt injection**: se prueba antes de producción (SyN, etapa 8).
 - **Red**: VNet, subredes, Service Endpoints y NSG de la IaC transversal (SyN, etapa 1).
@@ -109,13 +112,13 @@ PENDIENTE (decisión de la persona, 2026-11-12): ¿destino de logs, trazas y mé
 ## 12. CI/CD y despliegue
 
 - **Plataforma**: Azure DevOps, para repos y pipelines (decisión de la persona). El gate y el revisor del harness se portan a Azure Pipelines al mover el harness.
-- **Pipelines** (SyN, etapa 6; `BaseRef/agent/docs/deployment.md`):
+- **Pipelines** (SyN, etapa 6; `BaseRef/agent/docs/deployment.md`). El pipeline de la base solo declara ramas y variables por ambiente; sus pasos están en una plantilla externa que no está en `project-context/` (`BaseRef/agent/Pipeline/main-pipeline.yml:21-30`), así que estos se escriben desde cero:
   - build de la imagen Docker (instalando la librería desde el feed) y publicación en Azure Container Registry;
   - despliegue automático en Azure Container Apps (dev → prod);
   - triggers por rama;
   - validación posterior al despliegue y rollback si falla.
   - Variables por ambiente en archivos del pipeline.
-- **Ramas**: el harness usa `feature/NN-nombre` → `main`; la base usa `Integration` → `master`; SyN, etapa 5, habla de feature → develop → prod. PENDIENTE: ¿qué modelo de ramas se usa?
+- **Ramas**: el harness usa `feature/NN-nombre` → `main`; la base usa `Develop`, `Integration` y `master` para dev, qa y prod (`BaseRef/agent/Pipeline/main-pipeline.yml:1-20`); SyN, etapa 5, habla de feature → develop → prod. PENDIENTE: ¿qué modelo de ramas se usa?
 - **Aprobación de producción**: PENDIENTE: ¿quién aprueba el paso a prod?
 
 ## Relación con otros documentos
