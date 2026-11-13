@@ -61,12 +61,12 @@ Todo se configura por iniciativa, no por código (SyN, arquitectura §1).
 
 ## 6. Objetivos medibles
 
-Los umbrales se definirán con el levantamiento de la etapa 0 de SyN. Línea base del ejercicio de extracción con 76 campos sobre 35 documentos: completitud mediana del 38 % (máxima 65 %) y confianza promedio mediana de 0,71 (EjOCR, `output/resumen_documentos.csv`).
+Umbrales iniciales, que se revisan en cada replanning (decisión de la persona, 2026-11-13). Línea base del ejercicio de extracción con 76 campos sobre 35 documentos: completitud mediana del 38 % (máxima 65 %) y confianza promedio mediana de 0,71 (EjOCR, `output/resumen_documentos.csv`).
 
-- PENDIENTE: ¿en cuántas horas o días debe un equipo tener un pipeline nuevo, clonado de la plantilla, indexando en desarrollo?
-- PENDIENTE: ¿qué porcentaje de los documentos que entrega la fuente debe quedar indexado en cada ejecución, y cuántos fallos se toleran?
-- PENDIENTE: ¿cuánto puede tardar como máximo una ejecución incremental, y con qué frecuencia corre?
-- PENDIENTE: ¿qué completitud y confianza mínimas de extracción se exigen, y si se miden por campo o por documento?
+- **Cobertura por ejecución**: al menos el 98 % de los documentos que entrega la fuente queda indexado; el resto queda registrado con su causa en las tablas de logs.
+- **Duración**: la ejecución semanal termina en 4 horas o menos.
+- **Calidad de extracción**: completitud y confianza se miden por campo y por documento en cada ejecución, sin bloquearla. Meta: confianza promedio por documento de 0,70 o más.
+- **Tiempo para un pipeline nuevo**: no se mide por ahora; se mide al hacer el segundo caso de uso.
 
 ## 7. Restricciones
 
@@ -74,7 +74,7 @@ Los umbrales se definirán con el levantamiento de la etapa 0 de SyN. Línea bas
 - **Integración**: las fuentes se leen sin modificarlas (SyN, "Alcance": "sin modificar el sistema Control Doc"). Lo procesado se guarda en Azure Data Lake Storage por capas bronze, silver y gold, y los índices viven en Azure AI Search (SyN, arquitectura §1).
 - **Diseño**: los componentes genéricos se separan de cada caso de uso; el framework no se acopla a Control Doc (SyN, arquitectura §4).
 - **Operación**: la base de conocimiento solo se actualiza al ejecutar el pipeline (SyN, "Fuera de alcance"). Código y pipelines en Azure DevOps (decisión de la persona). Gobierno de datos con Unity Catalog y secretos en Key Vault (SyN, componente A).
-- **Legales y éticas**: los contratos son información interna y contienen datos personales (nombres y documentos de identidad de firmantes; `Control Doc/Campo Extraccion de Contratos.xlsx`, categoría 1). PENDIENTE: ¿se enmascaran o excluyen datos personales antes de indexar?
+- **Legales y éticas**: los contratos son información interna y contienen datos personales (nombres y documentos de identidad de firmantes; `Control Doc/Campo Extraccion de Contratos.xlsx`, categoría 1). PENDIENTE (dueño: legal / protección de datos de SUMMA): ¿se enmascaran o excluyen datos personales antes de indexar? Mientras no se responda, el acceso a lo indexado se limita a los usuarios de la app de Teams del caso de uso.
 
 ## 8. Principios rectores
 

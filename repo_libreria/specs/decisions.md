@@ -54,8 +54,8 @@ Una sola librería con estas reglas:
 
 - **Fecha**: 2026-11-13
 - **Introducida en**: Constitución (`init/constitucion`)
-- **Aplica a**: `src/<paquete>/`, los extras de `pyproject.toml` y el test de fronteras de LIB-01
-- **Estado**: vigente
+- **Aplica a**: `src/summa_ai_framework/`, los extras de `pyproject.toml` y el test de fronteras de LIB-01
+- **Estado**: vigente; confirmada por la persona el 2026-11-13
 - **Reemplaza**: la regla 3 de DEC-001 y su verificación de fronteras
 
 ### Contexto
@@ -69,13 +69,13 @@ La regla 3 de DEC-001 separa módulos de datos y de agentes y prohíbe los impor
 
 ### Decisión
 
-Tres grupos de módulos `[inferido]`:
+Tres grupos de módulos:
 
 | Grupo | Módulos | Dependencias |
 |---|---|---|
 | Comunes | `config`, `security`, `observability`, `llms`, `embeddings`, `vectordb` | Solo las obligatorias |
 | Workflow | `storage`, `workflow`, `extraction`, `processing`, `sources` | Extra del workflow |
-| Agente | `auth`, `agents`, `mcp` | Extra del agente |
+| Agente | `auth`, `agents` | Extra del agente |
 
 1. Los grupos de workflow y de agente importan de los comunes. Nunca se importan entre sí.
 2. Los módulos comunes no importan de ninguno de los otros dos grupos.
@@ -92,4 +92,34 @@ Tres grupos de módulos `[inferido]`:
 ### Cómo se verifica
 
 - **Fronteras de import**: un test recorre los imports y falla si un módulo de workflow importa uno de agente o al revés, o si un módulo común importa de cualquiera de los dos. Lo introduce LIB-01.
-- **Humo por extra** de DEC-001: con solo el extra del workflow no se pueden importar `auth`, `agents` ni `mcp`, y con solo el del agente no se importan los módulos de workflow.
+- **Humo por extra** de DEC-001: con solo el extra del workflow no se pueden importar `auth` ni `agents`, y con solo el del agente no se importan los módulos de workflow.
+
+---
+
+## DEC-003 — Orquestación del agente: ciclo modelo ↔ herramientas con entidades previas
+
+- **Fecha**: 2026-11-13
+- **Introducida en**: Constitución (`init/constitucion`)
+- **Aplica a**: `agents` (LIB-15 y LIB-16) y la creación del agente en `repo-agente-conversacional` (sus features 05 y 06)
+- **Estado**: vigente
+
+### Contexto
+
+SyN, etapa 6, pide un "orquestador de tools (planner + executor) en LangGraph" e identificar las entidades de la consulta antes de invocar herramientas. Hay dos lecturas: un nodo que arma un plan de pasos y otro que lo ejecuta, o el ciclo en que el modelo decide en cada turno si llama una herramienta o responde. La base implementa el ciclo (`BaseRef/cognitive/agents/graph_builder.py:61-82`) y deja el plan-and-execute como grafo propio de cada caso de uso (`BaseRef/agent/app/agent/graph.py`).
+
+### Decisión
+
+Decisión de la persona, 2026-11-13:
+
+1. El grafo por defecto es el ciclo: el nodo del modelo decide qué herramientas llamar ("planner") y el nodo de herramientas las ejecuta y devuelve su resultado ("executor"), hasta que el modelo responde.
+2. Antes del ciclo corre un paso fijo de identificación de entidades (LIB-16); las entidades encontradas se pasan al ciclo y la herramienta RAG las usa como filtros.
+3. Un caso de uso puede reemplazar el grafo por uno propio desde el punto de extensión de la plantilla, sin cambiar la librería.
+
+### Alternativas descartadas
+
+- **Nodo planificador explícito**: más llamadas al modelo y más código, sin un caso de uso que lo pida hoy. Queda disponible como grafo propio.
+
+### Cómo se verifica
+
+- Tests de LIB-15 con el doble del modelo: una consulta sin herramientas responde en un turno; una que pide una herramienta pasa por el nodo de herramientas y vuelve al modelo.
+- Test de LIB-16: las entidades se extraen antes del primer turno del modelo y llegan al estado del grafo.

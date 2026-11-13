@@ -2,15 +2,15 @@
 
 > Constitución. Define el **marco técnico común**. Cualquier desviación se registra en [[decisions]] o en `replanning/`.
 
-**Fuentes**: SyN y BaseRef (ver [[mission]]), el harness de este repo y decisiones de la persona del 2026-11-12.
+**Fuentes**: SyN y BaseRef (ver [[mission]]), el harness de este repo y decisiones de la persona del 2026-11-12 y 2026-11-13.
 
 ---
 
 ## 1. Lenguaje y framework
 
-- **Lenguaje y versión**: Python, la misma versión mínima que `repo-libreria` (PENDIENTE allí).
+- **Lenguaje y versión**: Python 3.12, como `repo-libreria`; imagen base `python:3.12-slim` (decisión de la persona, 2026-11-13).
 - **Framework**: FastAPI para la API HTTP (decisión de la persona). LangGraph para la orquestación, a través de la librería (SyN, etapa 6).
-- **Librería del framework**: `repo-libreria` con su extra del agente, en una versión fija instalada desde el feed de Azure Artifacts de SUMMA (decisión de la persona).
+- **Librería del framework**: `summa-ai-framework` (`repo-libreria`) con su extra del agente, en una versión fija instalada desde el feed de Azure Artifacts de SUMMA (decisión de la persona).
 - **Gestor de dependencias**: `uv` con `requirements.txt` (ejecución) y `requirements-dev.txt` (gate), como define `AGENTS.md`.
 
 ## 2. Convenciones de código
@@ -32,6 +32,7 @@ SyN, etapa 6, pide `app/`, `main.py`, `settings.py`, `requirements.txt` y `Docke
 app/
 ├─ main.py         # crea la app FastAPI, middleware y ciclo de vida
 ├─ api/v1/         # endpoints: conversación, sesiones y salud; esquemas de request/response
+├─ channels/       # adaptador de Bot Framework / Teams
 ├─ core/           # settings, creación del agente e inyección de dependencias
 ├─ agent/          # puntos de extensión: herramientas propias y grafo propio
 └─ middleware/     # autenticación y manejo global de errores
@@ -45,8 +46,9 @@ requirements.txt
 
 ## 4. Interfaces expuestas
 
-- **Conversación**: endpoint que recibe un mensaje de una sesión y devuelve la respuesta con sus fuentes como datos (documento, página y enlace). Lo consume el canal (Teams vía Azure Bot Service; SyN, etapa 8). La respuesta de la base solo trae el texto (`BaseRef/agent/app/api/v1/schemas.py:18-22`).
-- **Sesiones**: crear, listar y leer el historial de una sesión (`BaseRef/agent/app/api/v1/sessions.py:22-112`). Una sesión solo la lee y la usa su dueño.
+- **Canal Teams**: endpoint de mensajes de Bot Framework que recibe las actividades de Teams vía Azure Bot Service y responde en la conversación (decisión de la persona, 2026-11-13).
+- **Conversación**: endpoint que recibe un mensaje y el identificador de conversación, y devuelve la respuesta con sus fuentes como datos (documento, página y enlace). Si la sesión no existe, se crea con ese identificador (decisión de la persona, 2026-11-13). Lo usan el adaptador de Teams y las pruebas. La respuesta de la base solo trae el texto (`BaseRef/agent/app/api/v1/schemas.py:18-22`).
+- **Sesiones**: listar las sesiones del usuario y leer el historial de una (`BaseRef/agent/app/api/v1/sessions.py:55-112`). No hay endpoint para crearlas: nacen con el primer mensaje. Una sesión solo la lee y la usa su dueño.
 - **Salud**: endpoints de vida y disponibilidad para las validaciones posteriores al despliegue (SyN, etapa 6).
 - **Contrato**: el OpenAPI que genera FastAPI. Las rutas concretas se fijan en cada feature.
 
@@ -54,8 +56,9 @@ requirements.txt
 
 ### Base
 
-- La librería del framework, con su extra del agente: trae LangGraph, Azure OpenAI, AI Search, Cosmos DB, Key Vault, JWT y MCP.
+- La librería del framework, con su extra del agente: trae LangGraph, Azure OpenAI, AI Search, Cosmos DB, Key Vault y JWT.
 - `fastapi`, un servidor ASGI y `pydantic-settings` para las variables de entorno (`BaseRef/agent/requirements.txt`).
+- El SDK de Bot Framework para Python, para el adaptador de Teams; la base no lo trae y se fija en la feature 08.
 - Las versiones se fijan en la feature 01.
 
 ### Añadidas por features
@@ -66,21 +69,23 @@ Ninguna todavía.
 
 | Servicio | Uso | Autenticación |
 |---|---|---|
-| Azure OpenAI (vía Azure AI Foundry) | LLM del orquestador y embeddings de la consulta | Según el `tech-stack.md` §6 de `repo-libreria`. PENDIENTE: ¿qué deployments de chat y embeddings? |
+| Azure OpenAI (vía Azure AI Foundry) | LLM del orquestador y embeddings de la consulta. Los deployments los elige cada caso de uso en su configuración; el de embeddings es el del contrato del índice (decisión de la persona, 2026-11-13) | Clave de API en Key Vault (decisión de la persona, 2026-11-13) |
 | Azure AI Search | Recuperación sobre los índices de `repo-workflow` | Ídem |
 | Azure Cosmos DB | Historial de conversación por sesión | Ídem |
-| Azure Key Vault | Secretos referenciados desde `config_<ambiente>.yaml` | PENDIENTE: ¿identidad administrada del Container App? La base usa un service principal cuyo secreto inyecta el pipeline (`BaseRef/agent/Pipeline/variables/qa-vars.yml:12`) |
+| Azure Key Vault | Claves de API de los servicios, referenciadas desde `config_<ambiente>.yaml` | PENDIENTE (dueño: plataforma): ¿identidad administrada del Container App para llegar a Key Vault? La base usa un service principal cuyo secreto inyecta el pipeline (`BaseRef/agent/Pipeline/variables/qa-vars.yml:12`) |
 | Azure Container Registry | Imágenes del agente | Service connection de Azure DevOps |
 | Azure Container Apps | Hosting del backend (decisión de la persona) | — |
 | Azure Artifacts | Instalación de la librería en el build | Service connection de Azure DevOps |
-| Azure Bot Service + Microsoft Teams | Canal con el usuario final | App Registration con permisos de Microsoft Graph (SyN, etapa 0) |
+| Azure Bot Service + Microsoft Teams | Canal con el usuario final; el adaptador vive en esta plantilla | App Registration del bot (SyN, etapa 0); tokens de Bot Framework (§9) |
 
 ## 7. Entornos
 
 | Entorno | Recursos | Notas |
 |---|---|---|
-| dev | Grupo de recursos transversal de desarrollo, desplegado por la IaC transversal (SyN, etapa 1) | Desarrollo y pruebas. PENDIENTE: nombres de recursos |
-| prod | Grupo de recursos transversal de producción (SyN, etapa 1) | Atiende a los usuarios finales. PENDIENTE: nombres de recursos |
+| dev | Grupo de recursos transversal de desarrollo (SyN, etapa 1) | Desarrollo y pruebas; recibe lo que entra a `develop` |
+| prod | Grupo de recursos transversal de producción (SyN, etapa 1) | Atiende a los usuarios finales; recibe `main` |
+
+PENDIENTE (dueño: plataforma): nombres de los recursos de cada ambiente.
 
 ## 8. Configuración y secretos
 
@@ -89,25 +94,25 @@ Ninguna todavía.
 
 ## 9. Seguridad
 
-- **Autenticación**: middleware que valida tokens JWT en cada petición con el validador OIDC de la librería (SyN, etapa 6). Los endpoints de salud quedan fuera. PENDIENTE: ¿emisor y audiencia del token (Entra ID, Bot Service)? ¿El token identifica al usuario final o al servicio del canal? Si es el servicio, ¿de dónde sale el usuario al que pertenece la sesión? La base lo toma del `oid` del token (`BaseRef/core/security/authentication.py:116`).
-- **Autorización**: una sesión solo la lee y la usa su dueño: 404 si no existe y 403 si es de otro (`[inferido]` de `BaseRef/agent/app/api/v1/sessions.py:81-84`). PENDIENTE: ¿se restringen las respuestas según el usuario o el área que pregunta, o todos ven todo el índice?
+- **Autenticación**: middleware que valida en cada petición el JWT que firma Bot Framework (emisor de Bot Framework, audiencia = App ID del bot) con el validador OIDC de la librería (SyN, etapa 6) (decisión de la persona, 2026-11-13). Los endpoints de salud quedan fuera. El token identifica al servicio del canal; el usuario dueño de la sesión es el AAD object id que trae la actividad de Teams. La base lo tomaba del `oid` del token del usuario (`BaseRef/core/security/authentication.py:116`).
+- **Autorización**: una sesión solo la lee y la usa su dueño: 404 si no existe y 403 si es de otro (`[inferido]` de `BaseRef/agent/app/api/v1/sessions.py:81-84`). Todos los usuarios con acceso a la app de Teams ven todo el índice; filtrar por área entra por replanning (decisión de la persona, 2026-11-13).
 - **Sin modo sin autenticación ni endpoints de depuración**: la base trae un emisor de tokens para desarrollo (`BaseRef/agent/app/api/v1/auth.py`) y un usuario administrador falso cuando la autenticación está desactivada (`BaseRef/agent/app/core/dependencies.py:244-252`); aquí no se incluyen. En los tests se sustituye el validador por su doble.
 - **Imagen**: la credencial del feed no se pasa como `ARG` del build, porque queda en el historial de la imagen (`BaseRef/agent/Dockerfile:6`). `[inferido]`
 - **Validación de entrada**: modelos de FastAPI en cada endpoint; nada del usuario llega sin validar a filtros de búsqueda ni a herramientas.
 - **Prompt injection**: se prueba antes de producción (SyN, etapa 8).
 - **Red**: VNet, subredes, Service Endpoints y NSG de la IaC transversal (SyN, etapa 1).
-- **Datos sensibles**: contratos e historial de conversación; ver retención en [[mission]] §7.
+- **Datos sensibles**: contratos e historial de conversación; el historial expira a los 90 días ([[mission]] §7).
 
 ## 10. Observabilidad
 
-PENDIENTE (decisión de la persona, 2026-11-12): ¿destino de logs, trazas y métricas del agente, y se registran tokens y costo por consulta? La base usa OpenTelemetry con exportación a consola u OTLP según el ambiente (`BaseRef/agent/docs/observability.md`).
+Solo logs del servicio por ahora: sin OpenTelemetry, Azure Monitor ni medición de tokens o costo (decisión de la persona, 2026-11-13). Cada respuesta deja en el log su latencia, con la que se mide el p95 de [[mission]] §6. La base usa OpenTelemetry con exportación a consola u OTLP (`BaseRef/agent/docs/observability.md`); entra por replanning.
 
 ## 11. Testing
 
 - **Unitarias**: pytest dentro del gate, con los dobles de prueba de la librería; nada llama a Azure.
-- **Integración o contrato**: contra los servicios de dev. PENDIENTE: ¿qué features exigen prueba de integración?
+- **Integración o contrato**: contra los servicios de dev, en las features que tocan un servicio de Azure o el canal (decisión de la persona, 2026-11-13).
 - **Humo en el entorno desplegado**: validación posterior a cada despliegue en dev y prod (SyN, etapa 6).
-- **Evidencia aceptada para cerrar una feature**: PENDIENTE: ¿basta el gate local o se exige humo en dev para las features que tocan servicios de Azure?
+- **Evidencia aceptada para cerrar una feature**: el gate siempre, y humo en dev (una llamada real al endpoint, con su salida en `review.md`) para las features que tocan servicios de Azure (decisión de la persona, 2026-11-13).
 
 ## 12. CI/CD y despliegue
 
@@ -118,8 +123,8 @@ PENDIENTE (decisión de la persona, 2026-11-12): ¿destino de logs, trazas y mé
   - triggers por rama;
   - validación posterior al despliegue y rollback si falla.
   - Variables por ambiente en archivos del pipeline.
-- **Ramas**: el harness usa `feature/NN-nombre` → `main`; la base usa `Develop`, `Integration` y `master` para dev, qa y prod (`BaseRef/agent/Pipeline/main-pipeline.yml:1-20`); SyN, etapa 5, habla de feature → develop → prod. PENDIENTE: ¿qué modelo de ramas se usa?
-- **Aprobación de producción**: PENDIENTE: ¿quién aprueba el paso a prod?
+- **Ramas**: `feature/NN-nombre` → `develop`, que despliega en dev → `main`, que despliega en prod (decisión de la persona, 2026-11-13). La base usa `Develop`, `Integration` y `master` (`BaseRef/agent/Pipeline/main-pipeline.yml:1-20`).
+- **Aprobación de producción**: el equipo de plataforma aprueba el paso a prod, con una aprobación por grupo en el pipeline (decisión de la persona, 2026-11-13).
 
 ## Relación con otros documentos
 

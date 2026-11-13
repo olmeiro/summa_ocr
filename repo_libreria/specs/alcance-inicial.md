@@ -26,17 +26,16 @@ Capacidades genéricas que piden SyN (etapas 5 y 6) y las decisiones de la perso
 - **Configuración**: esquemas pydantic y loader de YAML con referencias a secretos. Cada plantilla elige el archivo de su ambiente.
 - **Seguridad**: credenciales de Azure, proveedores de secretos (variables de entorno y Key Vault) y validador de JWT por OIDC.
 - **Storage**: lectura y escritura de tablas y volúmenes de Unity Catalog por capa bronze/silver/gold, con escritura idempotente por clave.
-- **Contexto de workflow**: lectura del manifest `requires`/`provides`, contexto de cada step (de dónde lee, dónde escribe y con qué `run_id`) y validación del DAG (SyN, etapa 5). `[inferido]`: en la base vive en la librería (`BaseRef/core/devops/workflow.py:11-346`); si quedara en la plantilla, cada caso de uso clonado tendría su copia.
-- **Trazabilidad**: logger y registro por ejecución, step y documento, con `run_id`, timestamps, métricas y causa de error, en tablas de Unity Catalog cuya definición (esquema y particionado) entrega la librería (SyN, etapa 5).
-- **LLM y embeddings**: clientes de Azure OpenAI con reintentos; el de embeddings ofrece también llamada asíncrona para el agente.
-- **Extracción**: cliente de Content Understanding que analiza un binario con el analizador indicado y devuelve el markdown y los campos con su confianza y su página (EjOCR, `src/extractor.py:39-49`).
+- **Contexto de workflow**: lectura del manifest `requires`/`provides`, contexto de cada step (de dónde lee, dónde escribe y con qué `run_id`) y validación del DAG (SyN, etapa 5). En la base vive en la librería (`BaseRef/core/devops/workflow.py:11-346`); si quedara en la plantilla, cada caso de uso clonado tendría su copia (confirmado por la persona, 2026-11-13).
+- **Trazabilidad**: logger y registro por ejecución, step y documento, con `run_id`, timestamps, métricas y causa de error, en tablas de Unity Catalog de cada iniciativa cuya definición (esquema y particionado) y creación entrega la librería (SyN, etapa 5; tablas por iniciativa, decisión de la persona, 2026-11-13).
+- **LLM y embeddings**: clientes de Azure OpenAI con reintentos; el de embeddings ofrece también llamada asíncrona para el agente. Los deployments los elige cada caso de uso en su configuración.
+- **Extracción**: cliente de Content Understanding que crea o actualiza un analizador desde su definición versionada y analiza un binario (PDF, Word o imagen, con el tipo de contenido según la extensión) para devolver el markdown y los campos con su confianza y su página (EjOCR, `src/extractor.py:39-49`; analizador desde esquema y Word directo, decisiones de la persona, 2026-11-13).
 - **Chunking**: estrategias por tokens, por estructura del documento (markdown) y semántica, con trazabilidad a documento y página, y lineamientos de cuándo usar cada una (SyN, etapa 5).
-- **Búsqueda vectorial**: crear o actualizar un índice desde su definición, upsert, borrado por id y por documento, y consulta híbrida con filtros estructurados. `[inferido]` de `BaseRef/cognitive/vectordb/azure_search.py:146-285`; el borrado por documento lo exige el incremental de `repo-workflow` y la base no lo tiene.
+- **Búsqueda vectorial**: crear o actualizar un índice desde su definición, upsert, borrado por id y por documento, y consulta híbrida con filtros estructurados. Derivada de `BaseRef/cognitive/vectordb/azure_search.py:146-285`; el borrado por documento lo exige el incremental de `repo-workflow` y la base no lo tiene.
 - **Fuentes HTTP**: cliente genérico con autenticación por API Key u OAuth, paginación, reintentos y respeto del rate limit (SyN, etapa 4).
-- **Agentes**: grafo planner + executor sobre LangGraph, registro de herramientas, prompt principal desde plantilla Jinja e identificación de entidades antes de invocar herramientas (SyN, etapa 6).
-- **Memoria**: historial y sesiones en Cosmos DB, con su cliente (SyN, etapa 6).
+- **Agentes**: grafo sobre LangGraph en que el modelo elige herramientas en cada turno, precedido por la identificación de entidades de la consulta ([[decisions]] DEC-003); registro de herramientas y prompt principal desde plantilla Jinja (SyN, etapa 6).
+- **Memoria**: historial y sesiones en Cosmos DB, con su cliente y un tiempo de retención configurable (SyN, etapa 6).
 - **Herramienta RAG genérica**: consulta al índice con filtros por metadatos y devuelve las fuentes como datos (documento, página y enlace), no solo como texto (SyN, etapa 6 y arquitectura §3).
-- **MCP**: cliente MCP que expone las herramientas de un servidor como herramientas del agente (SyN, etapa 1).
 
 ### No entra
 
@@ -44,23 +43,25 @@ Capacidades genéricas que piden SyN (etapas 5 y 6) y las decisiones de la perso
   - A2A entre agentes, herramienta SQL y almacenamiento en Fabric o SQL;
   - alertas, métricas Prometheus y FinOps;
   - evaluación con ragas o deepeval y datasets de fairness;
-  - sanitización PII y Content Safety, salvo que lo exija la respuesta al `PENDIENTE` sobre datos personales de `repo-workflow` (su `mission.md` §7).
+  - sanitización PII y Content Safety, salvo que lo exija la respuesta al `PENDIENTE` sobre datos personales de `repo-workflow` (su `mission.md` §7);
+  - telemetría con OpenTelemetry y medición de tokens o costo.
+- **Cliente MCP**: fuera por ahora (decisión de la persona, 2026-11-13). SyN, etapa 1, pide un "MCP client stub"; entra por replanning cuando un caso de uso lo necesite. Guía para entonces: `BaseRef/cognitive/mcp/client.py:103-946`.
 - **OCR con Document Intelligence**: solo si Content Understanding no cubre algún formato (SyN: "si es necesario").
 - **Endpoints HTTP, jobs, steps y pipelines de despliegue**: son de las plantillas.
 - **Conectores, esquemas, prompts o filtros de un dominio concreto**: son de los casos de uso.
 - **De la base, además**: el registro central de soluciones que su loader consulta en Cosmos (`BaseRef/core/config/loader.py:39-106`), el voto de respuestas, el registro de artefactos y el costo de DBU de su trazabilidad.
 
-### Por decidir
+### Decidido el 2026-11-13
 
-- PENDIENTE: ¿"planner + executor" (SyN, etapa 6) es un nodo que planifica los pasos antes de ejecutarlos, o basta el ciclo en que el modelo elige herramientas en cada turno, como el grafo de la base (`BaseRef/cognitive/agents/graph_builder.py:61-82`)? Condiciona LIB-15 y LIB-16.
-- PENDIENTE: ¿el chunking usa `langchain-text-splitters` (y `langchain-experimental` para la estrategia semántica) en el extra del workflow, como la base, o se implementa sin LangChain? DEC-001 solo excluye del workflow LangGraph, FastAPI y MCP.
-- PENDIENTE: ¿el cliente MCP cubre solo herramientas de servidores remotos por HTTP, o también stdio, recursos y prompts, como la base? SyN, etapa 1, pide un "MCP client stub".
+- **Orquestación**: el modelo elige herramientas en cada turno, como el grafo de la base (`BaseRef/cognitive/agents/graph_builder.py:61-82`), con la identificación de entidades como paso fijo previo ([[decisions]] DEC-003).
+- **Chunking**: `langchain-text-splitters` y `langchain-experimental` en el extra del workflow, como la base.
+- **MCP**: fuera por ahora (ver "No entra").
 
 ## 3. Dependencias externas
 
 | Dependencia | Quién la provee | Entorno o recurso | Notas |
 |---|---|---|---|
-| Feed de Azure Artifacts | SUMMA (Azure DevOps) | Un feed | PENDIENTE en [[tech-stack]] §7 |
+| Feed de Azure Artifacts | Equipo de plataforma (Azure DevOps) | Un feed | No existe todavía; ver [[tech-stack]] §7 |
 | Servicios de Azure de dev para las pruebas de integración | IaC transversal | dev | SyN, etapa 1 |
 | Workspace de Databricks para probar storage y trazabilidad | Arquitectura de datos | dev | SyN, etapa 2 |
 
@@ -83,10 +84,9 @@ Ninguno se copia. Los siguientes son guía de diseño (decisión de la persona).
 | `BaseRef/cognitive/agents/graph_builder.py:20` | Construcción del grafo del agente |
 | `BaseRef/cognitive/agents/memory/cosmos_db.py:94-218` | Memoria de conversación y sesiones |
 | `BaseRef/cognitive/agents/tools/retrieval.py:44` | Herramienta RAG desde configuración |
-| `BaseRef/cognitive/mcp/client.py:103` | Cliente MCP |
 | EjOCR, `src/extractor.py` y `data/processed/*.json` | Llamada a Content Understanding y forma de su resultado |
 
-Sin referencia en la base: el cliente de fuentes HTTP, la identificación de entidades, el grafo planner + executor, el registro por documento, el chunking por tokens y la página de cada chunk.
+Sin referencia en la base: el cliente de fuentes HTTP, la identificación de entidades, la creación del analizador de Content Understanding, el registro por documento, el chunking por tokens y la página de cada chunk.
 
 ## 5. Coordinación con otros equipos o sistemas
 

@@ -16,7 +16,7 @@ Usuario ─► Microsoft Teams ─► Azure Bot Service ─► [ API del agente:
              Azure OpenAI (AI Foundry)          Azure AI Search             Azure Cosmos DB
              LLM y embeddings de consulta       índices publicados          historial por sesión
                                                 por repo-workflow
-                       Azure Key Vault (secretos) · servidores MCP (herramientas externas)
+                       Azure Key Vault (secretos)
 ```
 
 Cada caso de uso clona este repo y despliega su propia instancia (SyN, etapa 7).
@@ -29,38 +29,41 @@ La plantilla aporta endpoints, configuración y puntos de extensión. La lógica
 
 - **Estructura base**: `app/`, `main.py`, `settings.py`, `requirements.txt` y `Dockerfile`, con la librería en versión fija.
 - **Configuración**: `config/config_<ambiente>.yaml` con secretos referenciados en Key Vault.
-- **Autenticación**: middleware que valida tokens JWT y rechaza las peticiones sin token válido.
-- **Sesiones**: endpoints para crear, listar y leer el historial, persistido en Cosmos DB. Cada usuario accede solo a sus sesiones. `[inferido]` de `BaseRef/agent/app/api/v1/sessions.py:81-84`.
-- **Conversación**: endpoint que recibe un mensaje, ejecuta el agente (planner + executor) con el historial de la sesión y devuelve la respuesta con sus fuentes como datos (documento, página y enlace), para que el canal arme la cita (SyN, arquitectura §3 y etapa 8).
+- **Autenticación**: middleware que valida los tokens de Bot Framework y rechaza las peticiones sin token válido.
+- **Canal Teams**: adaptador de Bot Framework que recibe las actividades de Teams y responde en la conversación, reutilizable por todos los casos de uso (decisión de la persona, 2026-11-13).
+- **Sesiones**: la sesión nace con el primer mensaje, con el identificador de conversación del canal (decisión de la persona, 2026-11-13); endpoints para listar sesiones y leer su historial, persistido en Cosmos DB con 90 días de retención. Cada usuario accede solo a sus sesiones. `[inferido]` de `BaseRef/agent/app/api/v1/sessions.py:81-84`.
+- **Conversación**: endpoint que recibe un mensaje, ejecuta el agente (entidades y luego el ciclo modelo ↔ herramientas, DEC-003 de `repo-libreria`) con el historial de la sesión y devuelve la respuesta con sus fuentes como datos (documento, página y enlace), para que el canal arme la cita (SyN, arquitectura §3 y etapa 8).
 - **Prompt principal** en `config/prompts/`, parametrizable por caso de uso.
 - **Identificación de entidades** antes de invocar herramientas, configurable por caso de uso.
 - **Herramienta RAG** configurada desde el YAML: índice, filtros por metadatos y campos de cita y enlace (SyN, arquitectura §3).
 - **Puntos de extensión** en `app/agent/` para herramientas y grafo propios del caso de uso. `[inferido]` de `BaseRef/agent/docs/architecture.md`, "Capa Agente".
-- **Servidores MCP** declarados en la configuración (SyN, etapa 1).
 - **Salud**: endpoints de vida y disponibilidad.
 - **Pipelines de Azure DevOps**: imagen Docker en Container Registry, despliegue en Container Apps (dev → prod), triggers por rama, validación posterior al despliegue y rollback.
 - **Documentación** técnica y guía de onboarding para nuevos casos de uso (SyN, etapa 1).
 
 ### No entra
 
-- **Lógica genérica**: grafo, memoria, clientes de Azure, validador JWT y cliente MCP están en `repo-libreria`.
+- **Lógica genérica**: grafo, memoria, clientes de Azure y validador JWT están en `repo-libreria`.
+- **Servidores MCP**: fuera por ahora (decisión de la persona, 2026-11-13); entran por replanning.
 - **Lo que hace `repo-workflow`**: ingesta, procesamiento, extracción, chunking, embeddings de documentos e indexación. Tampoco crear o actualizar índices.
 - **El caso de uso Control Doc**: prompt de contratos, filtros por metadatos de contratos y citación al documento de Control Doc. Va en su propio repo, clonado de este (SyN, etapa 7; decisión de la persona).
-- **La extensión de Teams** (App Manifest, configuración de Azure Bot Service, tarjetas adaptativas): es del caso de uso (SyN, etapa 8). PENDIENTE: ¿el adaptador del canal Bot Framework/Teams va en el framework para reutilizarlo, o en cada caso de uso? La base no lo trae.
+- **Lo propio de cada app de Teams**: el App Manifest, el registro del bot en Azure Bot Service y las tarjetas adaptativas con el enlace al documento son del caso de uso (SyN, etapa 8). El adaptador genérico sí entra.
 - **Capacidades de la base que SyN no pide** (decisión de la persona; quedan para replanning):
   - voto de respuestas, A2A y herramienta SQL;
-  - métricas Prometheus y alertas;
-  - evaluación con golden set, fairness y ragas o deepeval, y endpoint de tokens de desarrollo;
-  - el modo sin autenticación con usuario falso y el driver ODBC de su imagen.
+  - métricas Prometheus, alertas, OpenTelemetry y medición de tokens o costo;
+  - evaluación automática con golden set, fairness y ragas o deepeval, y endpoint de tokens de desarrollo (el golden set se evalúa a mano en QA);
+  - el modo sin autenticación con usuario falso y el driver ODBC de su imagen;
+  - filtrar las respuestas por usuario o área.
 - **Canales distintos de Teams**: web, móvil, WhatsApp (SyN, "Fuera de alcance").
 - **Infraestructura como código de los recursos transversales** (SyN, etapa 1).
 - **Pruebas de calidad de respuestas y de carga del caso de uso** (SyN, etapa 8).
 - **Interpretación legal** y dashboards (SyN, "Fuera de alcance").
 
-### Por decidir
+### Decidido el 2026-11-13
 
-- PENDIENTE: ¿una sesión nace con un endpoint propio antes del primer mensaje, como en la plantilla de la base (`BaseRef/agent/app/api/v1/chat.py:44-45`), o al primer mensaje con el identificador de conversación que traiga el canal? La librería de la base la crea si falta (`BaseRef/cognitive/agents/implementation.py:87-96`), así que sus dos capas no coinciden.
-- El significado de "planner + executor" está como `PENDIENTE` en el alcance de `repo-libreria` (§2): el grafo de la base es un ciclo agente ↔ herramientas.
+- **Sesión**: nace con el primer mensaje, como la crea la librería de la base (`BaseRef/cognitive/agents/implementation.py:87-96`), y no con un endpoint previo como su plantilla (`BaseRef/agent/app/api/v1/chat.py:44-45`).
+- **Orquestación**: entidades y luego el ciclo modelo ↔ herramientas (DEC-003 de `repo-libreria`).
+- **Canal**: el adaptador de Teams entra en la plantilla; MCP sale.
 
 ## 3. Dependencias externas
 
@@ -68,10 +71,10 @@ La plantilla aporta endpoints, configuración y puntos de extensión. La lógica
 |---|---|---|---|
 | Librería del framework, versión publicada | `repo-libreria` | Feed de Azure Artifacts | Ver la columna "Depende de" de [[roadmap]] |
 | Suscripción Azure y grupo de recursos con permisos contributor | SUMMA | dev y prod | SyN, etapa 0 |
-| Recursos transversales: Key Vault, AI Search, Cosmos DB, Container Registry, Container Apps Environment, AI Foundry, VNet | IaC transversal | dev y prod | SyN, etapa 1. PENDIENTE: ¿en qué repo y con qué herramienta vive la IaC? |
+| Recursos transversales: Key Vault, AI Search, Cosmos DB, Container Registry, Container Apps Environment, AI Foundry, VNet | IaC transversal | dev y prod | SyN, etapa 1. PENDIENTE (dueño: SUMMA): ¿en qué repo y con qué herramienta vive la IaC? |
 | Índices de Azure AI Search | `repo-workflow` | uno por caso de uso | Su esquema es el contrato entre las dos plantillas |
 | Deployments de modelos (chat y embeddings) | AI Foundry de SUMMA | dev y prod | El modelo de embeddings debe ser el mismo con el que `repo-workflow` indexó |
-| App Registration con permisos de Microsoft Graph para Teams | SUMMA | — | SyN, etapa 0 |
+| App Registration del bot y recurso de Azure Bot Service, con el canal Teams | TI de SUMMA | dev y prod | SyN, etapas 0 y 8. Bloquea la feature 08 |
 | Proyecto de Azure DevOps: repos, pipelines y service connections | SUMMA | — | Decisión de la persona |
 
 ## 4. Punto de partida

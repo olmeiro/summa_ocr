@@ -20,7 +20,7 @@ Librería Python versionada con las capacidades comunes del framework de IA de S
 
 - configuración, secretos e identidad;
 - clientes de servicios cognitivos: modelos, embeddings, extracción de documentos, chunking y búsqueda vectorial;
-- piezas de agentes: grafo, memoria, herramientas, autenticación y MCP;
+- piezas de agentes: grafo, memoria, herramientas y autenticación;
 - trazabilidad de ejecuciones.
 
 Así cada plantilla, y cada caso de uso clonado de ella, solo aporta configuración y puntos de extensión.
@@ -58,8 +58,10 @@ Así cada plantilla, y cada caso de uso clonado de ella, solo aporta configuraci
 
 ## 6. Objetivos medibles
 
-- PENDIENTE: ¿qué cobertura mínima de tests se exige a la librería?
-- PENDIENTE: ¿qué condición marca la versión 1.0.0 (API pública estable)? No hay versiones previas: la librería arranca en `0.1.0`.
+Decisión de la persona, 2026-11-13; inicial, se revisa en replanning:
+
+- **Cobertura**: al menos el 80 % de las líneas de `src/`, exigido por el gate.
+- **Versión 1.0.0** (API pública estable): se publica al cerrar el roadmap, cuando las dos plantillas usan una versión publicada de la librería y el caso de uso Control Doc corre en dev. Hasta entonces la librería está en `0.x`, desde `0.1.0`.
 
 ## 7. Restricciones
 

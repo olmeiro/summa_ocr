@@ -52,12 +52,12 @@ Plantilla de repositorio, reutilizable y parametrizable, para construir y operar
 
 ## 6. Objetivos medibles
 
-Los umbrales se definirán con el levantamiento de preguntas frecuentes y casos prioritarios (SyN, etapa 0).
+Umbrales iniciales, que se revisan en cada replanning (decisión de la persona, 2026-11-13):
 
-- PENDIENTE: ¿en cuántas horas o días debe un equipo tener un agente nuevo, clonado de la plantilla, respondiendo en desarrollo?
-- PENDIENTE: ¿cuál es el p95 aceptable de respuesta del endpoint de conversación, y dónde se mide?
-- PENDIENTE: ¿qué porcentaje mínimo de respuestas basadas en recuperación debe incluir al menos una cita a la fuente?
-- PENDIENTE: ¿qué acierto mínimo debe lograr el agente sobre un conjunto de preguntas de referencia (golden set), y quién lo construye?
+- **Latencia**: el p95 de respuesta del endpoint de conversación es de 15 segundos o menos, medido con la latencia que cada respuesta deja en los logs.
+- **Citas**: el 100 % de las respuestas que usan la herramienta RAG trae al menos una cita a la fuente.
+- **Acierto**: al menos el 80 % sobre un golden set de 30 preguntas que construye la Gerencia de Abastecimiento, evaluado a mano en QA (SyN, etapa 8).
+- **Tiempo para un agente nuevo**: no se mide por ahora; se mide al hacer el segundo caso de uso.
 
 ## 7. Restricciones
 
@@ -65,7 +65,7 @@ Los umbrales se definirán con el levantamiento de preguntas frecuentes y casos 
 - **Integración**: en este alcance el único canal es Microsoft Teams (SyN, "Fuera de alcance"). El agente consume índices de Azure AI Search producidos por `repo-workflow`.
 - **Diseño**: los componentes reutilizables se mantienen separados de cada caso de uso; el framework no se acopla a Control Doc (SyN, arquitectura §4).
 - **Operación**: código y pipelines en Azure DevOps (SyN, componente C; decisión de la persona). Los secretos viven en Azure Key Vault.
-- **Legales y éticas**: el agente no interpreta jurídicamente más allá del contenido indexado (SyN, "Fuera de alcance"). Los contratos y las conversaciones son información interna y pueden contener datos personales. PENDIENTE: ¿cuánto tiempo se conserva el historial de conversación y quién puede consultarlo?
+- **Legales y éticas**: el agente no interpreta jurídicamente más allá del contenido indexado (SyN, "Fuera de alcance"). Los contratos y las conversaciones son información interna y pueden contener datos personales. El historial de conversación se conserva 90 días y solo lo consulta su dueño (decisión de la persona, 2026-11-13).
 
 ## 8. Principios rectores
 
