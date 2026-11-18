@@ -27,6 +27,12 @@
 - Crear el repo en Azure DevOps, mover el harness y portar el gate y el revisor a Azure Pipelines (con `develop` como rama de integración).
 - API de Control Doc: endpoint de listado con fecha de modificación y credencial de servicio sin WAF (TI de SUMMA). Se espera la API: bloquea las features 10 y 11 ([[alcance-inicial]] §4).
 - Contrato del índice con `repo-agente-conversacional` antes de la feature 09.
+- **Red del workspace de SUMMA** (antes de la 03): el cómputo de Databricks tiene que llegar a Entra ID, Key Vault, Azure OpenAI, AI Search y Content Understanding, con private endpoints y DNS privado o con una lista de salidas permitidas. Es tarea de plataforma o de la IaC, SyN etapas 1 y 2.
+  - **Prueba del 2026-11-18**: un notebook serverless del workspace de pruebas no resolvió por DNS ni `login.microsoftonline.com`, ni `*.vault.azure.net`, ni `management.azure.com`, ni `pypi.org`.
+  - **La librería respondió bien**: devolvió `ConfigError` con la ubicación y el motivo, sin valores.
+  - **Ese workspace solo sirve** para pruebas que no salen de Databricks.
+
+  Sigue abierta también la identidad del job (tech-stack §6): en Databricks no hay `az login`.
 
 ## Registro de sesiones
 
