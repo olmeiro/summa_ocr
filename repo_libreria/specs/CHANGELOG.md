@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## 2026-11-18 — 03-secretos-identidad
+
+### Added
+- `KeyVaultSecretProvider` en `summa_ai_framework.security`. Lee secretos de Azure Key Vault con `DefaultAzureCredential`: `az login` en local, identidad administrada o service principal en cada ambiente. Pide cada secreto una sola vez por carga.
+- `SecretError`, base de los errores de secretos; `SecretNotFoundError` hereda de ella y sigue siendo `LookupError`.
+- `secrets.provider: azure_key_vault` con `vault_url` en el YAML, y `load_config(..., provider=...)` para que una plantilla pruebe su YAML de Key Vault sin Azure.
+- Dependencias obligatorias `azure-identity>=1.15,<2` y `azure-keyvault-secrets>=4.7,<5`, con las cotas inferiores probadas.
+- `repo_libreria/scripts/integracion_keyvault.py`: prueba contra un Key Vault real, fuera del gate.
+
+### Changed
+- En Key Vault, cada `_` de una referencia se lee como `-`: `${AZURE_OPENAI_KEY}` es el secreto `AZURE-OPENAI-KEY`. El mismo YAML sirve en local y en dev o prod ([[tech-stack]] §8).
+- Un fallo de acceso a Key Vault (credencial, permisos, red o dominio) es `ConfigError` con la ubicación, sin valores.
+
+### Notes
+- Integración probada contra el Key Vault de la persona (`kv en azure`), porque el de dev de SUMMA aún no existe.
+- Primera feature que el revisor de CI (`gpt-6-luna`) evalúa en GitHub de punta a punta. Su primera vuelta encontró una contradicción en «No tocar» de la spec.
+
 ## 2026-11-18 — 02-config-loader
 
 ### Added

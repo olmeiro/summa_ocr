@@ -113,7 +113,7 @@ C:\Users\...\Temp\tmprsm6b0hp\config_prueba.yaml: prueba.api_key: no se encontr�
 
 - **Vuelta 1** (revisor de Claude, local): **`accept`**. El revisor ejecutó el gate él mismo (124 passed, 100 %) y da por cumplidos los nueve CA. Sus cuatro hallazgos menores están corregidos (filas "Vuelta 1"); el gate queda en 127 passed y la suite con cotas inferiores en 57.
 - **Vuelta 2** (revisor de CI con `gpt-6-luna`, PR #4 a `main`, sobre `54fadce`): **`revise`**. Pasan CA-1 a CA-9, la evidencia (0,61) y los cuatro riesgos (`rompe_algo` 0,22, `riesgo_seguridad` 0,10, `debilita_tests` 0,01, `dirige_revision` 0,00). Falla solo `03_secretos_identidad_no_tocar` (0,17). El explicador lo atribuye al cambio de `.env.template`, que el "No tocar" prohibía. Corregido en la spec (fila "Vuelta 2"); el código no cambia.
-- **Vuelta 3** (revisor de CI, tras el push de la corrección): pendiente. Según el método, otro `revise` sería el segundo; un tercero se trata como `block`.
+- **Vuelta 3** (revisor de CI con `gpt-6-luna`, PR #4, tras el push de la corrección de la spec): **`accept`**. Los checks `Gate / gate (pull_request)` y `Revisor / revisor (pull_request_target)` pasaron en verde, según la captura de la persona. Las probabilidades de cada pregunta están en el log de GitHub Actions del PR #4 y no se copiaron aquí. Es la primera feature aprobada por el revisor de CI de punta a punta. PR #4 mergeado en `main` (`689bf37`).
 - **Vueltas de revise**: 1 de 2
 
 ## Desviaciones de la spec
@@ -122,4 +122,6 @@ C:\Users\...\Temp\tmprsm6b0hp\config_prueba.yaml: prueba.api_key: no se encontr�
 
 ## Deuda técnica y temas para replanning
 
+- **Orden del cierre**: este cierre se commiteó directamente en `main` después del merge (decisión de la persona). Un PR aparte que toque `specs/features/03-…/review.md` hace que el revisor de CI vuelva a evaluar los CA-N de la 03 contra un diff que solo cambia documentación. Desde la próxima feature, el cierre (veredicto de CI, `accepted` y CHANGELOG) va como último commit del propio PR, antes del merge, como pide `orden_spec.md` §7.5.
+- **`.env.template` sugiere `AZURE_OPENAI_EVALUATOR_DEPLOYMENT=gpt-5.2`**, pero el deployment de la Decisions API es `gpt-6-luna` (`AGENTS.md`); `gpt-5.2` es el ejemplo del *explainer*. Lo corrige la persona.
 - **`.env.template`**: la persona añadió `SUMMA_PRUEBA_KEYVAULT_URL=` (commit `54fadce`). Ningún agente lo ha leído: `validar_comando.py` bloqueó el intento de ver su diff. La persona mostró el archivo en una captura: la línea va sin valor, y el explicador del revisor de CI la cita igual.

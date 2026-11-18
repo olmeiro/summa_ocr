@@ -39,7 +39,7 @@ Autenticación, memoria, grafo, entidades y herramienta RAG. **Salida**: con sol
 |---|---|---|---|---|---|
 | 01 | esqueleto-paquete: `pyproject.toml`, `src/`, extras, build de la wheel, humo por extra y test de fronteras de import (DEC-001, DEC-002) | 1 | — | accepted | `features/01-esqueleto-paquete/` |
 | 02 | config-loader: esquemas pydantic y loader de YAML; las referencias a secretos las resuelve un proveedor, aquí el de variables de entorno | 1 | 01 | accepted | `features/02-config-loader/` |
-| 03 | secretos-identidad: credenciales de Azure y proveedor de secretos de Key Vault para el loader | 1 | 02 | passing | `features/03-secretos-identidad/` |
+| 03 | secretos-identidad: credenciales de Azure y proveedor de secretos de Key Vault para el loader | 1 | 02 | accepted | `features/03-secretos-identidad/` |
 | 04 | publicacion-feed: pipeline de Azure DevOps (gate, build y publicación en el feed) | 1 | 01 | not_started | `features/04-publicacion-feed/` |
 | 05 | almacenamiento-unity: lectura y escritura de tablas y volúmenes de Unity Catalog por capa, con escritura idempotente por clave | 2 | 02 | not_started | `features/05-almacenamiento-unity/` |
 | 06 | contexto-workflow: manifest `requires`/`provides`, contexto de step (entradas, salidas y `run_id`) y validación del DAG | 2 | 02 | not_started | `features/06-contexto-workflow/` |
