@@ -6,7 +6,13 @@ from pathlib import Path
 import yaml
 from pydantic import SecretStr, ValidationError
 
-from ..security import EnvSecretProvider, SecretNotFoundError, SecretProvider
+from ..security import (
+    EnvSecretProvider,
+    KeyVaultSecretProvider,
+    SecretError,
+    SecretNotFoundError,
+    SecretProvider,
+)
 from .models import SecretsConfig, SummaConfig
 
 _REFERENCIA = re.compile(r"\$\{([A-Za-z0-9_-]+)\}")
@@ -46,6 +52,8 @@ def _resolver(
         raise ConfigError(
             f"{_texto(ubicacion)}: no se encontró el secreto '{referencia[1]}' o está vacío"
         ) from None
+    except SecretError as e:  # credencial, permisos o red: el mensaje no lleva valores
+        raise ConfigError(f"{_texto(ubicacion)}: {e}") from None
     resueltas.add(ubicacion)
     return SecretStr(secreto)
 
@@ -82,22 +90,32 @@ def _leer(ruta: Path) -> dict[str, object]:
     return datos
 
 
-def load_config[T: SummaConfig](path: str | Path, schema: type[T]) -> T:
+def _proveedor(secretos: SecretsConfig) -> SecretProvider:
+    if secretos.provider == "azure_key_vault" and secretos.vault_url is not None:
+        return KeyVaultSecretProvider(str(secretos.vault_url))
+    return EnvSecretProvider()
+
+
+def load_config[T: SummaConfig](
+    path: str | Path, schema: type[T], *, provider: SecretProvider | None = None
+) -> T:
     """Lee el YAML de `path`, resuelve sus referencias a secretos y lo valida con `schema`.
 
-    `schema` es SummaConfig o la subclase de la plantilla. Cualquier fallo es ConfigError.
+    `schema` es SummaConfig o la subclase de la plantilla. `provider` sustituye al proveedor
+    que declara el YAML: así una plantilla prueba su YAML de Key Vault sin Azure.
+    Cualquier fallo es ConfigError.
     """
     ruta = Path(path)
     datos = _leer(ruta)
     try:
-        SecretsConfig.model_validate(datos.get("secrets") or {})  # solo "env" hasta LIB-03
+        secretos = SecretsConfig.model_validate(datos.get("secrets") or {})
     except ValidationError as e:
         detalle = _describir(e, set(), ("secrets",))
         raise ConfigError(f"{ruta}: configuración inválida\n{detalle}") from None
 
     resueltas: set[Ubicacion] = set()
     try:
-        proveedor = EnvSecretProvider()
+        proveedor = provider if provider is not None else _proveedor(secretos)
         # secrets no se resuelve: dice cómo resolver todo lo demás
         resuelto = {
             k: v if k == "secrets" else _resolver(v, proveedor, (k,), resueltas)

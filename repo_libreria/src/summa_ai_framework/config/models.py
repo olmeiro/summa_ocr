@@ -1,8 +1,16 @@
 """Esquemas base de la configuración: cada feature añade su sección y cada plantilla los extiende."""
 
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, SecretStr
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    SecretStr,
+    model_validator,
+)
 
 
 def _solo_referencias(valor: object) -> SecretStr:
@@ -23,9 +31,16 @@ class ConfigModel(BaseModel):
 
 
 class SecretsConfig(ConfigModel):
-    """Cómo se resuelven las referencias. Key Vault llega en LIB-03."""
+    """Cómo se resuelven las referencias: variables de entorno o Azure Key Vault."""
 
-    provider: Literal["env"] = "env"
+    provider: Literal["env", "azure_key_vault"] = "env"
+    vault_url: HttpUrl | None = None  # obligatoria con azure_key_vault
+
+    @model_validator(mode="after")
+    def _vault_url_con_key_vault(self) -> Self:
+        if self.provider == "azure_key_vault" and self.vault_url is None:
+            raise ValueError("vault_url es obligatoria con provider: azure_key_vault")
+        return self
 
 
 class SummaConfig(ConfigModel):

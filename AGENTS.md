@@ -9,6 +9,7 @@ uv venv && .venv\Scripts\activate
 uv pip install -r requirements-dev.txt   # incluye requirements.txt y la librería en modo editable
 python scripts/gate.py
 python repo_libreria/scripts/humo_extras.py   # humo por extra; necesita uv y red, fuera del gate
+python repo_libreria/scripts/integracion_keyvault.py   # Key Vault real (LIB-03): lo ejecuta la persona con az login y SUMMA_PRUEBA_KEYVAULT_URL del .env
 ```
 
 ## Arquitectura
