@@ -8,17 +8,18 @@
 - Constitución commiteada en `init/constitucion` (`a337366`), sin mergear a `main`. `develop` y `feature/01-esqueleto-paquete` creadas en local desde ella el 2026-11-18.
 - Paquete `summa-ai-framework`, Python 3.12, cobertura mínima del 80 %, ramas `feature/NN-nombre` → `develop` → `main`; plataforma aprueba las versiones. Extras `workflow` y `agent`.
 - **LIB-01 `accepted`** (revisor, vuelta 3). El código vive en `repo_libreria/` (`pyproject.toml`, `src/`, `tests/`, `scripts/`), el gate de la raíz lo cubre y `requirements-dev.txt` lo instala editable. Las plantillas pueden instalarla con `uv pip install -e <ruta>/repo_libreria[workflow]` o `[agent]`.
-- Commiteado hasta `19eb498`. Quedan sin commit el arreglo del gate (CA-7) y el cierre (review, roadmap, CHANGELOG y progress).
-- Roadmap con 17 features (`LIB-01` a `LIB-17`); 01 `accepted` y las demás en `not_started`. Su §4 dice qué ofrece la base para cada una y qué cambia.
+- LIB-01 commiteada entera (hasta `e80bcf0`), sin mergear: `feature/01-esqueleto-paquete` sigue fuera de `develop`.
+- **LIB-02 `passing`, sin commit**, en `feature/02-config-loader` (desde `e80bcf0`). Módulos `config` (`load_config`, `SummaConfig`, `ConfigModel`, `SecretRef` y `ConfigError`) y `security` (`EnvSecretProvider`). Las referencias `${NOMBRE}` se resuelven después de parsear y ocupan el valor completo; las credenciales son `SecretRef`; la API y las claves del YAML van en inglés. Revisor: vueltas 1 y 2 `revise`, corregidas (la 2: excepciones del parser YAML que escapaban sin ruta). Falta la vuelta 3, la última: otro `revise` sería `block`.
+- Roadmap con 17 features (`LIB-01` a `LIB-17`): 01 `accepted`, 02 `passing` y las demás en `not_started`. Su §4 dice qué ofrece la base para cada una y qué cambia.
 - Decisiones vigentes: DEC-001 (una librería con extras), DEC-002 (módulos comunes, de workflow y de agente; confirmada) y DEC-003 (ciclo modelo ↔ herramientas con entidades previas).
 - Quedan 2 `PENDIENTE:` en la Constitución, los dos del feed y con dueño plataforma ([[tech-stack]] §7 y §9).
-- Gate de `summa_ocr` en verde el 2026-11-18 (84 tests, 100 % de cobertura de la librería) y humo por extra en verde.
+- Gate de `summa_ocr` en verde el 2026-11-18 (112 tests, 100 % de cobertura de la librería). Humo por extra en verde, y suite de la librería en verde con las cotas mínimas (pydantic 2.7.0, PyYAML 6.0.1).
 
 ## Siguiente paso
 
-1. Dos commits: `fix(harness): …` (`scripts/gate.py`, `.claude/hooks/gate_al_parar.py`, `tests/test_harness.py` y la spec enmendada) y `docs(specs): …` (cierre).
-2. Mergear `init/constitucion` en `main` y después `feature/01-esqueleto-paquete` en `develop`.
-3. `feature/02-config-loader` desde `develop` y `/specs feature 02-config-loader`.
+1. Commits de LIB-02 (spec, código, arreglo del revisor de CI y evidencia), y después la vuelta 3 (última) con `gpt-6-luna` en local, lanzada por la persona (`AGENTS.md`, "Harness"; `REVISOR_BASE=feature/01-esqueleto-paquete`, `REVISOR_RAMA=feature/02-config-loader`). Con `accept`: cierre (roadmap `accepted` y CHANGELOG). Con `revise`: `block`, para y decide la persona.
+2. Mergear `init/constitucion` en `main` y las ramas de las features en `develop`.
+3. `feature/03-secretos-identidad` y `/specs feature 03-secretos-identidad`: Key Vault y cómo se mapean los nombres de los secretos (`_` y `-`).
 
 Antes de LIB-05, replanning de la comprobación negativa del humo (`features/01-esqueleto-paquete/review.md`, "Deuda técnica").
 
@@ -29,6 +30,7 @@ Antes de LIB-05, replanning de la comprobación negativa del humo (`features/01-
 
 ## Registro de sesiones
 
+- 2026-11-18 — LIB-02: decisiones de la persona (API y claves YAML en inglés, referencias solo como valor completo), spec, `config` y `security`, gate en verde, humo y cotas mínimas en verde (PyYAML sube a 6.0.1). Revisor: vuelta 1 `revise` (archivo no UTF-8, formato de ubicación, alias circulares), corregida; vuelta 2 `revise` (fecha imposible y anidamiento profundo en el parser), corregida. La persona elige `gpt-6-luna` para la vuelta 3: `revisor_ci.py` ya encuentra las specs de cada proyecto (CA-10) — sin commit.
 - 2026-11-18 — LIB-01: decisiones de la persona (código en `repo_libreria/`, extras `workflow` y `agent`, humo fuera del gate), spec, implementación, gate y humo en verde. Revisor: vuelta 1 `revise` (test de la raíz frágil ante submódulos, índice negativo en imports relativos, `build/` viejo en la wheel), corregida; vuelta 2 `block` por entorno (gate inaccesible para el revisor). La persona commitea hasta `19eb498` y pide arreglar el harness en esta rama: `gate.py` elige el Python del `.venv` (CA-7). Vuelta 3 `accept`; evidencia repetida sobre el código final; 01 `accepted` y CHANGELOG.
 - 2026-11-13 — Respuestas de la persona a los `PENDIENTE`: Python 3.12, paquete `summa-ai-framework`, ramas con `develop`, aprobación de plataforma, claves en Key Vault, sin telemetría externa, gate + integración en dev para cerrar, cobertura 80 %, 1.0 al cerrar el roadmap, chunking con `langchain-text-splitters`, MCP fuera, DEC-003 — pendiente de commit.
 - 2026-11-13 — Specs afinadas contra el código de la base y de EjOCR: roadmap de 16 a 18 features (almacenamiento en Unity Catalog y contexto de workflow, que el alcance pedía y ninguna feature entregaba), §4 del roadmap con el punto de partida de cada feature, DEC-002 y citas corregidas.
