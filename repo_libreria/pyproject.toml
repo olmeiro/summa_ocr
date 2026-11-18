@@ -12,9 +12,11 @@ description = "Capacidades comunes del framework de IA de SUMMA para sus plantil
 requires-python = ">=3.12"
 dependencies = [
   # Comunes a los dos consumidores (DEC-001): cargan su configuración con config/
-  # Cotas inferiores comprobadas con la suite de la librería (LIB-02, review.md)
+  # Cotas inferiores comprobadas con la suite de la librería (review.md de LIB-02 y LIB-03)
   "pydantic>=2.7,<3",
   "PyYAML>=6.0.1,<7",   # 6.0 no tiene wheel para Python 3.12 y su build falla
+  "azure-identity>=1.15,<2",
+  "azure-keyvault-secrets>=4.7,<5",
 ]
 
 [project.optional-dependencies]
