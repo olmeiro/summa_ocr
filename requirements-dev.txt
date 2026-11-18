@@ -2,4 +2,6 @@
 ruff>=0.10
 mypy
 pytest
+pytest-cov
+-e ./repo_libreria   # summa-ai-framework editable: el gate la prueba como la instala un consumidor
 openai>=3.26,<4   # scripts/revisor_ci.py: el harness lo necesita aunque el proyecto no use OpenAI
