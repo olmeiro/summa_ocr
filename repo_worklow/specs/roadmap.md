@@ -42,7 +42,7 @@ Pipelines de Azure DevOps y guía de onboarding. **Salida**: el bundle se despli
 
 | ID | Nombre | Fase | Depende de | Estado | Carpeta |
 |---|---|---|---|---|---|
-| 01 | esqueleto-bundle: estructura del repo, `databricks.yml` (dev, prod) y `resources/workflow.yml` con un job mínimo, su trigger semanal (activo en prod, pausado en dev) y la versión de la librería en un solo lugar | 1 | — | passing | `features/01-esqueleto-bundle/` |
+| 01 | esqueleto-bundle: estructura del repo, `databricks.yml` (dev, prod) y `resources/workflow.yml` con un job mínimo, su trigger semanal (activo en prod, pausado en dev) y la versión de la librería en un solo lugar | 1 | — | accepted | `features/01-esqueleto-bundle/` |
 | 02 | manifest-dag: `workflow_manifest.yaml` con `requires`/`provides`, patrón común de step y test que compara el manifest con las dependencias del job | 1 | 01, LIB-06 | not_started | `features/02-manifest-dag/` |
 | 03 | configuracion: `config_<ambiente>.yaml` por iniciativa con secretos de Key Vault, cargado con la librería | 1 | 02, LIB-03 | not_started | `features/03-configuracion/` |
 | 04 | logs-auditoria: tarea que crea y mantiene los esquemas de la iniciativa y sus tablas de logs en Unity Catalog, y registro por ejecución, step y documento con `run_id`, timestamps y causa | 1 | 03, LIB-07 | not_started | `features/04-logs-auditoria/` |
