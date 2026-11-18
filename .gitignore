@@ -226,3 +226,6 @@ project-context/
 
 # Salida del revisor con gpt-6-luna en local; su registro va al review.md de la feature
 revisor_local.txt
+
+# Estado local del CLI de Databricks (bundle deploy)
+.databricks/

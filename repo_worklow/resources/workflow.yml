@@ -1,0 +1,45 @@
+# Job del workflow. Por ahora una sola tarea de humo; las features siguientes añaden los steps.
+
+resources:
+  jobs:
+    summa_workflow:
+      name: summa_workflow
+      description: Workflow de procesamiento e indexación de documentos de SUMMA
+      tags:
+        proyecto: summa-ai
+        ambiente: ${bundle.target}
+      timeout_seconds: 3600
+      max_concurrent_runs: 1
+
+      # Trigger semanal: pausado en dev y activo en prod (tech-stack §8)
+      schedule:
+        quartz_cron_expression: ${var.trigger_cron}
+        timezone_id: ${var.trigger_zona}
+        pause_status: ${var.trigger_pausa}
+
+      job_clusters:
+        - job_cluster_key: cluster_efimero
+          new_cluster:
+            spark_version: ${var.spark_version}
+            node_type_id: ${var.node_type_id}
+            num_workers: 0 # un solo nodo: más workers exige quitar el perfil singleNode
+            data_security_mode: SINGLE_USER
+            azure_attributes:
+              availability: ON_DEMAND_AZURE
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: local[*]
+            custom_tags:
+              ResourceClass: SingleNode
+
+      tasks:
+        - task_key: s00_humo
+          description: Comprueba el runtime y la librería instalada en el clúster
+          job_cluster_key: cluster_efimero
+          spark_python_task:
+            python_file: ../src/steps/s00_humo.py
+            parameters:
+              - --ambiente
+              - ${bundle.target}
+          libraries:
+            - whl: ../../repo_libreria/dist/summa_ai_framework-${var.libreria_version}-py3-none-any.whl

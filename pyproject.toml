@@ -6,11 +6,13 @@
 files = [
   "scripts", ".claude/hooks", "tests",   # en una API: ["src", "tests"]
   "repo_libreria/src", "repo_libreria/scripts", "repo_libreria/tests",
+  "repo_worklow/src", "repo_worklow/tests",
 ]
 strict = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "repo_libreria/tests"]
+testpaths = ["tests", "repo_libreria/tests", "repo_worklow/tests"]
+pythonpath = ["repo_worklow/src"]   # los steps se importan como `steps.sNN_nombre`
 # Cobertura solo de la librería (tech-stack §11). Para ejecutar un solo test: --no-cov
 addopts = "--cov=summa_ai_framework --cov-fail-under=80"
 
@@ -53,3 +55,4 @@ extend-immutable-calls = [
 # Los patrones son relativos a la raíz: los de repo_libreria van aparte
 "repo_libreria/tests/**" = ["S101"]
 "repo_libreria/scripts/**" = ["S603", "S607"]   # S607: uv se busca en el PATH
+"repo_worklow/tests/**" = ["S101"]

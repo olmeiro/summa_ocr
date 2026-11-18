@@ -1,0 +1,56 @@
+# Bundle de la plantilla del workflow de SUMMA (Databricks Asset Bundle).
+# Desplegar: databricks bundle deploy -t dev -p <perfil>   (el host sale del perfil del CLI)
+# Sin secretos ni datos de ningún workspace: tech-stack §9.
+
+bundle:
+  name: summa_workflow
+
+include:
+  - resources/*.yml
+
+# Lo que no necesita el job no se sube al workspace
+sync:
+  exclude:
+    - specs/**
+    - tests/**
+
+variables:
+  libreria_version:
+    description: Versión de summa-ai-framework. Único lugar donde se fija (tech-stack §8).
+    default: "0.1.0"
+  spark_version:
+    description: Databricks Runtime del clúster efímero (tech-stack §1).
+    default: "18.x-scala2.13"
+  node_type_id:
+    description: Tipo de nodo del clúster efímero de un nodo.
+    default: Standard_D4ds_v5
+  trigger_cron:
+    description: Trigger semanal en formato Quartz (segundo minuto hora día mes día-semana).
+    default: "0 0 2 ? * MON"
+  trigger_zona:
+    description: Zona horaria del trigger.
+    default: America/Bogota
+  trigger_pausa:
+    description: PAUSED o UNPAUSED; cada target fija el suyo.
+    default: PAUSED
+
+# Mientras no exista el feed (LIB-04), la wheel de la librería se construye al desplegar
+artifacts:
+  summa_ai_framework:
+    type: whl
+    path: ../repo_libreria
+    build: uv build --wheel
+
+targets:
+  dev:
+    mode: development
+    default: true
+    variables:
+      trigger_pausa: PAUSED
+
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      trigger_pausa: UNPAUSED
