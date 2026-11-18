@@ -124,3 +124,30 @@ def test_features_solo_carpetas_de_feature() -> None:
 )
 def test_features_por_rama(rama: str, esperado: list[str]) -> None:
     assert revisor_ci.features(["src/app.py"], rama) == esperado
+
+
+def test_features_en_specs_de_un_proyecto() -> None:
+    tocados = [
+        "repo_libreria/specs/features/02-config/requirements.md",
+        "repo_libreria/specs/features/_plantilla/brief.md",
+        "repo_libreria/specs/roadmap.md",  # specs/ del proyecto, pero no una feature
+        "otro/specs/features/README.md",
+    ]
+    assert revisor_ci.features(tocados) == ["repo_libreria/specs/features/02-config"]
+
+
+@pytest.mark.parametrize(
+    ("rama", "esperado"),
+    [
+        ("feature/02-config", ["repo_libreria/specs/features/02-config"]),
+        ("feature/09-otra", []),  # la rama no tiene spec en el árbol
+    ],
+)
+def test_features_por_rama_busca_en_el_arbol(rama: str, esperado: list[str]) -> None:
+    directorios = [
+        "repo_libreria/specs/features",
+        "repo_libreria/specs/features/02-config",
+        "repo_libreria/specs/features/_plantilla",
+        "repo_worklow/specs/features/_plantilla",
+    ]
+    assert revisor_ci.features(["repo_libreria/src/x.py"], rama, directorios) == esperado
