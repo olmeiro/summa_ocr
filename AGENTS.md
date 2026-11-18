@@ -44,6 +44,6 @@ python repo_libreria/scripts/humo_extras.py   # humo por extra; necesita uv y re
 - El mismo revisor se ejecuta en local para que evalúe un modelo distinto del que implementa. Lo lanza la persona, nunca un agente, porque necesita las credenciales del `.env`:
   - antes, commitear la feature: solo lee lo commiteado;
   - cargar las variables `AZURE_OPENAI_EVALUATOR_*` en la sesión;
-  - `REVISOR_BASE=<rama de la que sale la feature>`, `REVISOR_RAMA=feature/NN-nombre` y `python scripts/revisor_ci.py`.
+  - `REVISOR_BASE=<rama de la que sale la feature>`, `REVISOR_RAMA=feature/NN-nombre` y `python scripts/revisor_ci.py | Tee-Object revisor_local.txt`. `revisor_local.txt` está en `.gitignore`: el agente lo lee desde ahí y lo copia al `review.md` de la feature, que es el registro versionado.
 
   Termina en `[REVISOR] accept` o `revise`.

@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 2026-11-18 — 02-config-loader
+
+### Added
+- `summa_ai_framework.config`: `load_config(path, schema)` carga el YAML de la plantilla y resuelve las referencias `${NOMBRE}` después de parsear. También trae `SummaConfig` (raíz que extiende cada plantilla), `ConfigModel` (rechaza claves desconocidas), `SecretRef` y `ConfigError`.
+- `summa_ai_framework.security`: interfaz `SecretProvider` y `EnvSecretProvider` (variables de entorno). Key Vault llega en LIB-03.
+- Dependencias obligatorias `pydantic>=2.7,<3` y `PyYAML>=6.0.1,<7`, con las cotas inferiores probadas.
+
+### Changed
+- API pública y claves del YAML en inglés; mensajes y docstrings en español ([[tech-stack]] §2).
+- Las credenciales se declaran `SecretRef`: una clave en claro en el YAML, o una referencia en un campo `str`, es un error. Los errores nunca muestran valores secretos ([[tech-stack]] §8).
+- Harness: `scripts/revisor_ci.py` encuentra las specs de cada proyecto (`<proyecto>/specs/features/`) y se puede ejecutar en local con `gpt-6-luna`.
+
+### Notes
+- Primera feature evaluada por un modelo distinto del que la implementó: vuelta 3 con `gpt-6-luna`, `accept`.
+
 ## 2026-11-18 — 01-esqueleto-paquete
 
 ### Added

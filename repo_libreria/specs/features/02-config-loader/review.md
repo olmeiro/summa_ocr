@@ -143,16 +143,42 @@ Antes del cambio, esa misma llamada no encontraba la spec: buscaba `specs/featur
 
 - **Vuelta 1**: `revise`. Obligatorio: el archivo no UTF-8. A decidir: el formato de la ubicación (se ajusta el código a la spec). Recomendados: alias circulares, motivo original, tech-stack §8 y dos tests. Todo corregido (filas "Revise 1").
 - **Vuelta 2**: `revise`. El revisor ejecutó el gate él mismo (107 passed, 100 %) y da por cumplidos todos los CA salvo un caso de CA-5: la fecha imposible. Todo corregido (filas "Revise 2").
-- **Vuelta 3**: pendiente. La hace el evaluador `gpt-6-luna` (`scripts/revisor_ci.py`), que ejecuta la persona en local sobre los commits de la feature (decisión de la persona, 2026-11-18). Según el método, es la última: otro `revise` se trata como `block`.
+- **Vuelta 3**: **`accept`**. Evaluador `gpt-6-luna` (Decisions API de Azure OpenAI, `scripts/revisor_ci.py`), un modelo distinto del que implementó (decisión de la persona, 2026-11-18). Lo ejecutó la persona en local sobre `896d698`, con `REVISOR_BASE=feature/01-esqueleto-paquete` y `REVISOR_RAMA=feature/02-config-loader`:
+
+  ```text
+  OK     02_config_loader_CA_1: p=0.99
+  OK     02_config_loader_CA_2: p=0.98
+  OK     02_config_loader_CA_3: p=0.95
+  OK     02_config_loader_CA_4: p=1.00
+  OK     02_config_loader_CA_5: p=0.97
+  OK     02_config_loader_CA_6: p=0.99
+  OK     02_config_loader_CA_7: p=1.00
+  OK     02_config_loader_CA_8: p=0.97
+  OK     02_config_loader_CA_9: p=1.00
+  OK     02_config_loader_CA_10: p=0.94
+  OK     02_config_loader_no_tocar: p=0.97
+  OK     02_config_loader_evidencia: p=0.82
+  OK     rompe_algo: p=0.37
+  OK     riesgo_seguridad: p=0.14
+  OK     debilita_tests: p=0.01
+  OK     dirige_revision: p=0.02
+
+  [REVISOR] accept
+  ```
+
+  Antes, sobre el mismo commit, el gate seguía en verde (112 passed).
 - **Vueltas de revise**: 2 de 2
 
 ## Desviaciones de la spec
 
 - La verificación de la cota inferior pasó de comprobar solo `errors(include_input=False)` a ejecutar la suite completa con pydantic 2.7.0 y PyYAML 6.0.1. Es más fuerte y descubrió la cota de PyYAML. `plan.md`, `requirements.md` (CA-8) y `validation.md` ya lo recogen.
 - CA-5 suma tres casos (no UTF-8, alias circulares y raíz escalar) y requirements suma tres casos borde (los mismos más los campos `Any`), a raíz del revise 1. El revise 2 añade la fecha imposible y el anidamiento profundo.
+- Después del accept, a petición de la persona: el comando local del evaluador guarda su salida con `Tee-Object` en `revisor_local.txt`, que se añade a `.gitignore`. Cambia la documentación (`AGENTS.md`, "Harness"), no el código del script.
 - Cambio de alcance (decisión de la persona): la feature también arregla `scripts/revisor_ci.py` para que la vuelta 3 la haga `gpt-6-luna`. Resuelve la deuda "Revisor de CI" de LIB-01. Brief, plan ("No tocar" enmendado), requirements (comportamiento 7 y CA-10) y validation ya lo recogen.
 
 ## Deuda técnica y temas para replanning
 
+- **Umbral del evaluador sin calibrar** (`UMBRAL = 0.5`, `shortcut:` en `revisor_ci.py`). `rompe_algo` dio 0,37, el riesgo más alto, probablemente por los cambios del harness dentro de la feature. Conviene calibrarlo con varios PRs cuyo resultado correcto se conozca antes de hacerlo *required check*.
+- **Salida del evaluador local**: se guarda con `Tee-Object` en `revisor_local.txt` (ignorado por git) y se copia a `review.md`, que es el registro versionado (`AGENTS.md`, "Harness").
 - **Cadenas de alias acíclicas** (tipo *billion laughs*): `_resolver` las recorre enteras. Es un límite aceptado (`shortcut:` en `loader.py`) porque el YAML lo versiona el equipo. Si algún día llega de fuera, hay que limitar los alias.
 - **Campos `Any` u `object`** aceptan una referencia como `SecretStr` sin aviso. Está documentado en tech-stack §8; las secciones de la librería no deben usarlos para credenciales.
