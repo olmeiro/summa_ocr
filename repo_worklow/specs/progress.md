@@ -15,11 +15,11 @@
 - Roadmap con 16 features: 01 `passing` y las demás en `not_started`, con dependencias `LIB-NN`. Su §4 dice qué ofrece la base para cada una y qué cambia.
 - Decidido el 2026-11-13: Python 3.12 y Databricks Runtime 18 LTS (cuota de unos 10 núcleos en el workspace), un workspace por ambiente, trigger semanal, ramas con `develop`, logs por iniciativa (los crea el job), analizador desde el esquema versionado, Word directo, Excel como tabla, umbrales iniciales en [[mission]] §6.
 - Quedan 5 `PENDIENTE:` en la Constitución, todos con dueño: identidad del job y nombres de prod (plataforma), IaC (SUMMA), datos personales (legal) y API de Control Doc (TI).
-- Gate de `summa_ocr` en verde el 2026-11-18 (142 tests, 15 del workflow). Harness compartido con la raíz.
+- Gate de `summa_ocr` en verde el 2026-11-18 (147 tests, 20 del workflow). Harness compartido con la raíz.
 
 ## Siguiente paso
 
-1. Revisor de Claude, commits y PR a `main`, con el revisor de CI. El cierre va dentro del PR.
+1. Revisor de Claude: `accept` (vuelta 1, hallazgos menores corregidos). Commits y PR a `main`, con el revisor de CI. El cierre va dentro del PR.
 2. Replanning corto: ¿clásico o serverless para SUMMA? Ver `features/01-esqueleto-bundle/review.md`, «Deuda técnica».
 3. La 02 (`manifest-dag`) espera LIB-06.
 

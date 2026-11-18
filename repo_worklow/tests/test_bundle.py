@@ -20,13 +20,22 @@ RECURSOS_YAML: dict[str, Any] = yaml.safe_load(
 JOB: dict[str, Any] = RECURSOS_YAML["resources"]["jobs"]["summa_workflow"]
 VARIABLES = {nombre: v["default"] for nombre, v in BUNDLE["variables"].items()}
 
-CLAVE_SENSIBLE = re.compile(r"secret|password|passwd|token|api_key", re.IGNORECASE)
-URL_CON_CREDENCIAL = re.compile(r"://[^/\s:@]+:[^/\s@]+@")
+CLAVE_SENSIBLE = re.compile(
+    r"secret|password|passwd|token|api_key|account\.key", re.IGNORECASE
+)  # account.key: fs.azure.account.key.* en spark_conf
+# Cualquier userinfo en una URL: usuario:clave@, :token@ o token@ (como el token de un feed)
+URL_CON_CREDENCIAL = re.compile(r"://[^/\s@]*@")
+REFERENCIA = re.compile(r"\$\{[^}]+\}|\{\{secrets/[^}]+\}\}")
 
 
 def _literal(valor: object) -> bool:
-    """Un valor escrito tal cual; `${var.x}` y `{{secrets/...}}` son referencias, no secretos."""
-    return isinstance(valor, str) and bool(valor) and not valor.startswith(("${", "{{secrets/"))
+    """Un valor escrito tal cual. Solo una referencia completa (`${var.x}` o `{{secrets/...}}`)
+    no lo es: `${var.x}abc` lleva un literal pegado."""
+    if isinstance(valor, bool) or valor is None:
+        return False
+    if isinstance(valor, int | float):
+        return True
+    return isinstance(valor, str) and bool(valor) and not REFERENCIA.fullmatch(valor)
 
 
 def secretos(datos: object, ruta: str = "") -> list[str]:
@@ -116,8 +125,26 @@ def test_el_bundle_real_no_tiene_secretos() -> None:
         ({"spark_env_vars": {"AZURE_CLIENT_SECRET": "abc"}}, "AZURE_CLIENT_SECRET"),
         ({"variables": {"api_token": {"default": "xyz"}}}, "api_token"),
         ({"env": {"PIP_EXTRA_INDEX_URL": "https://build:clave@pkgs.dev.azure.com/x"}}, "URL"),
+        ({"env": {"PIP_EXTRA_INDEX_URL": "https://:pat@pkgs.dev.azure.com/x"}}, "URL"),
+        ({"env": {"PIP_EXTRA_INDEX_URL": "https://pat@pkgs.dev.azure.com/x"}}, "URL"),
+        ({"env": {"DB_PASSWORD": 12345}}, "DB_PASSWORD"),
+        ({"env": {"AZURE_CLIENT_SECRET": "${var.prefijo}clave"}}, "AZURE_CLIENT_SECRET"),
+        (
+            {"spark_conf": {"fs.azure.account.key.cuenta.dfs.core.windows.net": "clave"}},
+            "account.key",
+        ),
     ],
-    ids=["host", "clave-secreta", "variable-token", "url-con-credencial"],
+    ids=[
+        "host",
+        "clave-secreta",
+        "variable-token",
+        "url-con-credencial",
+        "url-con-token-sin-usuario",
+        "url-con-token-como-usuario",
+        "clave-numerica",
+        "referencia-con-literal",
+        "account-key-de-storage",
+    ],
 )
 def test_el_comprobador_detecta_cada_secreto(bundle: dict[str, Any], esperado: str) -> None:
     (hallazgo,) = secretos(bundle)
@@ -127,3 +154,4 @@ def test_el_comprobador_detecta_cada_secreto(bundle: dict[str, Any], esperado: s
 def test_las_referencias_no_son_secretos() -> None:
     assert secretos({"env": {"AZURE_CLIENT_SECRET": "{{secrets/kv/cliente}}"}}) == []
     assert secretos({"variables": {"api_token": {"default": "${var.otra}"}}}) == []
+    assert secretos({"env": {"PIP_INDEX_URL": "https://pypi.org/simple"}}) == []

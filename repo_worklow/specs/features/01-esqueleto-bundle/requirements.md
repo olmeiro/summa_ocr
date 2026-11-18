@@ -21,7 +21,7 @@
 - **Sin secretos en el bundle**:
   - ni credenciales;
   - ni variables `AZURE_CLIENT_SECRET` o de token;
-  - ni URLs con usuario y contraseña ([[tech-stack]] §2 y §9).
+  - ni URLs con credenciales, como el token de un feed en `PIP_EXTRA_INDEX_URL` ([[tech-stack]] §2 y §9).
 - **Sin datos del workspace de pruebas** en el repo: ni su host, ni su perfil, ni sus políticas de clúster.
 - **El step no ejecuta nada al importarse**: expone `ejecutar(ambiente)` y solo `main()` lee los argumentos ([[tech-stack]] §2).
 - **El step no llama a `sys.exit`**: Databricks ejecuta el script dentro de IPython, donde hasta `sys.exit(0)` marca la tarea como fallida (visto en serverless, 2026-11-18). Un fallo se señala con una excepción. La regla pasa a [[tech-stack]] §2 para todos los steps.
@@ -56,8 +56,8 @@
   - la ruta de la wheel de la tarea usa `${var.libreria_version}`;
   - ningún otro texto del bundle contiene esa versión literal.
 - [ ] **CA-4**: Dados los YAML del bundle, cuando corre el gate, entonces falla si aparece cualquiera de estos:
-  - una clave con `secret`, `password`, `token` o `client_secret` y valor literal;
-  - una URL con usuario y contraseña (`://usuario:clave@`);
+  - una clave con `secret`, `password`, `token`, `api_key` o `account.key` (p. ej. `fs.azure.account.key.*`) y un valor literal, sea texto o número. Una referencia completa (`${var.x}` o `{{secrets/...}}`) no es literal; `${var.x}abc` sí;
+  - una URL con credenciales en la parte de usuario: `://usuario:clave@`, `://:token@` o `://token@`;
   - un `workspace.host`.
 
   El test se prueba con un YAML sintético que contiene cada uno.

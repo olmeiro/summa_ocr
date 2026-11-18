@@ -44,6 +44,9 @@ def test_main_imprime_y_devuelve_cero(
 ) -> None:
     monkeypatch.setenv("DATABRICKS_RUNTIME_VERSION", "18.0")
     assert main(["--ambiente", "prod"]) == 0
-    lineas = capsys.readouterr().out.splitlines()
-    assert lineas[0] == "[HUMO] ambiente: prod"
-    assert "[HUMO] runtime: 18.0" in lineas
+    assert capsys.readouterr().out.splitlines() == [
+        "[HUMO] ambiente: prod",
+        f"[HUMO] python: {platform.python_version()}",
+        "[HUMO] runtime: 18.0",
+        f"[HUMO] summa_ai_framework: {version('summa-ai-framework')}",
+    ]
