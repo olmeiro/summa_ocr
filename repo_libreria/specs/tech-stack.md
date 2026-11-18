@@ -77,6 +77,7 @@ Previstas `[inferido]` de `BaseRef/core/pyproject.toml` y `BaseRef/cognitive/pyp
 | LIB-01 | `pytest-cov` | Desarrollo (`requirements-dev.txt`) |
 | LIB-02 | `pydantic>=2.7,<3` y `PyYAML>=6.0.1,<7` | Obligatorias: las dos plantillas cargan configuración. Cotas inferiores probadas con la suite |
 | LIB-02 | `types-PyYAML` | Desarrollo |
+| LIB-03 | `azure-identity>=1.15,<2` y `azure-keyvault-secrets>=4.7,<5` | Obligatorias: las dos plantillas leen Key Vault. Cotas inferiores probadas con la suite |
 
 ## 6. Servicios externos
 
@@ -86,7 +87,7 @@ Previstas `[inferido]` de `BaseRef/core/pyproject.toml` y `BaseRef/cognitive/pyp
 | Azure AI Content Understanding (AI Foundry) | Extracción de documentos | Ídem |
 | Azure AI Search | Índices y consultas | Ídem |
 | Azure Cosmos DB | Historial y sesiones del agente | Ídem |
-| Azure Key Vault | Secretos referenciados desde la configuración | Identidad de Azure (`azure-identity`) |
+| Azure Key Vault | Secretos referenciados desde la configuración (`secrets.provider: azure_key_vault`, LIB-03) | `DefaultAzureCredential`: `az login` en local, identidad administrada o service principal por variables de entorno en cada ambiente. La identidad la decide plataforma |
 | Unity Catalog y ADLS | Tablas y volúmenes del workflow | Contexto del clúster de Databricks |
 | Azure Artifacts | Publicación del paquete | Service connection de Azure DevOps |
 
@@ -105,6 +106,8 @@ La librería no se despliega: cada plantilla instala una versión publicada en s
   - **Se resuelven después de parsear el YAML**: un secreto con caracteres de YAML no altera la estructura.
   - **Solo en campos `SecretRef`**: las credenciales se declaran `SecretRef` en los esquemas. Un valor en claro en ese campo es un error, y también una referencia en un campo con otro tipo concreto (`str`, `int`…). Un campo `Any` u `object` la recibe como `SecretStr`, enmascarada.
   - **La sección `secrets` no se resuelve**: dice cómo resolver el resto.
+  - **Nombres en Key Vault** (LIB-03, decisión de la persona, 2026-11-18): cada `_` de la referencia se lee como `-`, porque Key Vault no admite `_`. `${AZURE_OPENAI_KEY}` es la variable `AZURE_OPENAI_KEY` en local y el secreto `AZURE-OPENAI-KEY` en Key Vault, así que el mismo YAML sirve con los dos proveedores.
+  - **Proveedor inyectado**: `load_config(..., provider=...)` sustituye al del YAML. Las plantillas lo usan para probar su YAML de Key Vault sin Azure.
 
 ## 9. Seguridad
 
