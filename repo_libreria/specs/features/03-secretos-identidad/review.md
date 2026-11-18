@@ -107,17 +107,19 @@ C:\Users\...\Temp\tmprsm6b0hp\config_prueba.yaml: prueba.api_key: no se encontr�
 | Vuelta 1 (menor): `provider or …` y `client or …` descartaban un inyectado que se evalúa falso | Se comprobaba si era verdadero y no si era `None` | `is not None`; casos `se-evalua-falso` y `test_un_cliente_inyectado_que_se_evalua_falso_se_usa_igual` | corrección + test |
 | Vuelta 1 (menor): un `ValueError` del SDK de Key Vault escaparía sin ser `ConfigError` | La política de autenticación de `azure-keyvault-secrets` lanza `ValueError` (comprobado en `_shared/challenge_auth_policy.py`: 4 `raise ValueError`) | Se captura `(AzureError, ValueError)`; caso `dominio-distinto` | corrección + test |
 | Vuelta 1 (menor): el comentario de `pyproject.toml` atribuía las cotas solo a LIB-02 | Comentario desactualizado | Ahora cita LIB-02 y LIB-03 | corrección |
+| Vuelta 2 (CI): `no_tocar` falló (p=0,17) porque el PR cambia `.env.template` | Contradicción de la spec: "No tocar" prohibía los `.env*`, mientras "Dependencias" y `AGENTS.md` piden que la persona añada la variable a `.env.template` | "No tocar" y la tabla de archivos de `plan.md` permiten esa línea sin valor, añadida por la persona | corrección de la spec. Al escribir un plan, "No tocar" no puede contradecir lo que el propio plan pide: lo comprueba el paso 4 de `/specs feature` (coherencia) |
 
 ## Veredicto del revisor
 
 - **Vuelta 1** (revisor de Claude, local): **`accept`**. El revisor ejecutó el gate él mismo (124 passed, 100 %) y da por cumplidos los nueve CA. Sus cuatro hallazgos menores están corregidos (filas "Vuelta 1"); el gate queda en 127 passed y la suite con cotas inferiores en 57.
-- **Veredicto final** (revisor de CI con `gpt-6-luna`, PR a `main`): pendiente.
-- **Vueltas de revise**: 0 de 2
+- **Vuelta 2** (revisor de CI con `gpt-6-luna`, PR #4 a `main`, sobre `54fadce`): **`revise`**. Pasan CA-1 a CA-9, la evidencia (0,61) y los cuatro riesgos (`rompe_algo` 0,22, `riesgo_seguridad` 0,10, `debilita_tests` 0,01, `dirige_revision` 0,00). Falla solo `03_secretos_identidad_no_tocar` (0,17). El explicador lo atribuye al cambio de `.env.template`, que el "No tocar" prohibía. Corregido en la spec (fila "Vuelta 2"); el código no cambia.
+- **Vuelta 3** (revisor de CI, tras el push de la corrección): pendiente. Según el método, otro `revise` sería el segundo; un tercero se trata como `block`.
+- **Vueltas de revise**: 1 de 2
 
 ## Desviaciones de la spec
 
-- Ninguna por ahora.
+- "No tocar" de `plan.md` corregido en la vuelta 2: `.env.template` recibe `SUMMA_PRUEBA_KEYVAULT_URL=` sin valor, como ya pedían "Dependencias" y `AGENTS.md`.
 
 ## Deuda técnica y temas para replanning
 
-- **`.env.template`**: falta que la persona añada `SUMMA_PRUEBA_KEYVAULT_URL=` sin valor (`AGENTS.md`, "Variables de entorno"). Los agentes no pueden editarlo.
+- **`.env.template`**: la persona añadió `SUMMA_PRUEBA_KEYVAULT_URL=` (commit `54fadce`). Ningún agente lo ha leído: `validar_comando.py` bloqueó el intento de ver su diff. La persona mostró el archivo en una captura: la línea va sin valor, y el explicador del revisor de CI la cita igual.

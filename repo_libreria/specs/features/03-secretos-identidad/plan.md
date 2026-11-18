@@ -35,6 +35,7 @@
 | `repo_libreria/scripts/integracion_keyvault.py` | Nuevo: prueba contra Key Vault real, fuera del gate |
 | `repo_libreria/pyproject.toml` | `azure-identity>=1.15,<2` y `azure-keyvault-secrets>=4.7,<5` |
 | `AGENTS.md` | "Ejecutar": comando de la prueba de integración |
+| `.env.template` | Lo cambia la persona, no un agente: una línea `SUMMA_PRUEBA_KEYVAULT_URL=` sin valor (`AGENTS.md`, "Variables de entorno") |
 | `repo_libreria/specs/tech-stack.md` | §5 dependencias; §6 credencial; §8 nombres en Key Vault |
 | `repo_libreria/specs/roadmap.md`, `progress.md` | Estado y continuidad |
 
@@ -69,5 +70,6 @@
 - La interfaz `SecretProvider` y `EnvSecretProvider` (LIB-02).
 - Las reglas de las referencias de [[tech-stack]] §8 (valor completo, `SecretRef`, `secrets` sin resolver).
 - El harness de la raíz (`scripts/`, `.claude/`, `.github/workflows/`, `tests/`). `AGENTS.md` solo cambia en "Ejecutar".
-- `repo_worklow/`, `repo_agente_conversacional/` y los `.env*`.
+- `repo_worklow/` y `repo_agente_conversacional/`.
+- `.env` (no se versiona). De `.env.template` solo cambia la línea `SUMMA_PRUEBA_KEYVAULT_URL=` sin valor, que añade la persona porque los agentes no pueden editarlo (`AGENTS.md`, "Variables de entorno"). No puede llevar ningún valor.
 - La Constitución, salvo [[tech-stack]] §5, §6 y §8, el estado en [[roadmap]] y [[progress]].
