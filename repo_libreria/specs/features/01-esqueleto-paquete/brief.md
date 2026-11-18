@@ -23,6 +23,7 @@ Decisiones de la persona del 2026-11-18:
 - Mientras no exista el repo en Azure DevOps, la librería vive en `repo_libreria/` dentro de `summa_ocr`. Es un proyecto autocontenido (su `pyproject.toml`, `src/` y `tests/`) que se mueve tal cual a su repo. Hasta entonces la cubre el gate de la raíz.
 - Los extras se llaman `workflow` y `agent`.
 - El humo por extra es un script fuera del gate: se ejecuta al cerrar cada feature y, desde LIB-04, en el pipeline.
+- `scripts/gate.py` usa el Python del `.venv` de la raíz aunque nadie lo haya activado. Se arregla en esta feature y en esta rama: el revisor no podía ejecutar el gate y la revisión quedó bloqueada (`review.md`, "Block 2").
 
 Los módulos de [[tech-stack]] §3 no se crean vacíos: cada feature crea el suyo, y el test de fronteras obliga a asignarlo a un grupo.
 
@@ -37,6 +38,7 @@ Los módulos de [[tech-stack]] §3 no se crean vacíos: cada feature crea el suy
 - Instalación editable de la librería en el `.venv` de la raíz.
 - Definición de API pública y nombres de los extras en [[tech-stack]] §4.
 - Sección "Arquitectura" de `AGENTS.md`: dónde vive cada proyecto y sus specs.
+- `scripts/gate.py` elige el Python del `.venv`. El hook Stop deja de resolverlo por su cuenta.
 
 ## No incluye
 

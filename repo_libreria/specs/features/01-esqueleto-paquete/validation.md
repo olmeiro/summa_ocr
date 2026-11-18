@@ -12,6 +12,7 @@
 | CA-4 | `python scripts/gate.py` y, para probar el umbral, `python -m pytest -q tests/test_revisor_ci.py`: no importa el paquete, la cobertura queda en 0 % y debe fallar | automática | Salida del gate con `Required test coverage of 80% reached`, y `Coverage failure` con código 1 en la otra ejecución |
 | CA-5 | `repo_libreria/tests/test_paquete.py`: el paquete importado está en `repo_libreria/src/` y su raíz no expone nombres públicos | automática, en el gate | Salida de `python -m pytest repo_libreria/tests --no-cov -v` |
 | CA-6 | Lectura del diff de `repo_libreria/specs/tech-stack.md` §4 y de `AGENTS.md` | revisión | Diff |
+| CA-7 | `tests/test_harness.py::test_el_gate_prefiere_el_python_del_venv` en el gate, y `python scripts/gate.py` lanzado con el Python del sistema y el `.venv` sin activar. También lo demuestra el revisor, que lo ejecuta así | automática + comando | `sys.executable` del Python que lanza el gate y la salida del gate en verde |
 
 ## Validación técnica
 

@@ -29,6 +29,9 @@
 | `pyproject.toml` (raíz) | `[tool.mypy] files` y `[tool.pytest.ini_options] testpaths` con las rutas de `repo_libreria`; `addopts` con cobertura; `per-file-ignores` para sus `tests/` y `scripts/` |
 | `requirements-dev.txt` (raíz) | `pytest-cov` y `-e ./repo_libreria` |
 | `AGENTS.md` | Introducción, comando del humo en "Ejecutar" y sección "Arquitectura": dónde vive cada proyecto y sus specs |
+| `scripts/gate.py` | `interprete()`: el Python del `.venv` de la raíz si existe; si no (CI), `sys.executable` |
+| `.claude/hooks/gate_al_parar.py` | Pierde su propio `interprete()` y lanza el gate con `sys.executable`. El gate ya elige el `.venv` |
+| `tests/test_harness.py` | El test del intérprete pasa del hook a `gate.py` |
 | `repo_libreria/specs/tech-stack.md` | §4: nombres de los extras y definición de API pública |
 | `repo_libreria/specs/roadmap.md`, `progress.md` | Estado de la feature y continuidad |
 
@@ -59,7 +62,7 @@
 
 ## No tocar
 
-- `scripts/`, `.claude/` y `.github/workflows/` de la raíz: son el harness compartido (`AGENTS.md`, "Harness").
-- `tests/` de la raíz: los tests del harness quedan igual.
+- `scripts/`, `.claude/` y `.github/workflows/` de la raíz, salvo `scripts/gate.py` y `.claude/hooks/gate_al_parar.py`: son el harness compartido (`AGENTS.md`, "Harness"). Esos dos cambian por decisión de la persona del 2026-11-18, tras el block de la vuelta 2.
+- `tests/` de la raíz, salvo el test del intérprete en `tests/test_harness.py`, que sigue a la lógica que prueba. Ningún test se debilita.
 - `repo_worklow/` y `repo_agente_conversacional/`.
 - La Constitución de la librería, salvo [[tech-stack]] §4, [[roadmap]] (estado) y [[progress]].

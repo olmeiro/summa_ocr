@@ -18,6 +18,7 @@
    - comprueba que los módulos existentes del otro grupo no se pueden importar.
 6. El gate de la raíz aplica lint, formato y tipos a `repo_libreria/`, ejecuta sus tests y exige el 80 % de cobertura sobre `summa_ai_framework`.
 7. `requirements-dev.txt` instala la librería en modo editable.
+8. `python scripts/gate.py` ejecuta sus comprobaciones con el Python del `.venv` de la raíz si existe, aunque se lance con otro Python. Sin `.venv`, como en CI, usa el Python que lo lanzó.
 
 ## Reglas de negocio
 
@@ -50,7 +51,7 @@
 - [[decisions]] DEC-001: ninguna dependencia de ejecución en esta feature, y las herramientas de desarrollo solo en `requirements-dev.txt`.
 - [[decisions]] DEC-002: tabla de grupos de arriba.
 - Python 3.12 ([[tech-stack]] §1). Sin acceso a Azure ni secretos.
-- El harness compartido (`scripts/`, `.claude/`, `.github/workflows/` de la raíz) no cambia ([[plan]], "No tocar").
+- Del harness compartido solo cambian `scripts/gate.py` y `.claude/hooks/gate_al_parar.py` ([[plan]], "No tocar").
 
 ## Criterios de aceptación
 
@@ -77,3 +78,4 @@
 - [ ] **CA-6**: Dado el cambio de documentación, entonces:
   - [[tech-stack]] §4 nombra los extras `workflow` y `agent` y define la API pública como en las reglas de arriba;
   - la sección "Arquitectura" de `AGENTS.md` dice dónde vive cada proyecto y sus specs.
+- [ ] **CA-7**: Dado un `.venv` en la raíz y una shell sin activarlo, cuando se ejecuta `python scripts/gate.py` con el Python del sistema, entonces las comprobaciones corren con el Python del `.venv` y el gate termina en verde. Sin `.venv`, `interprete()` devuelve el Python que lanzó el gate.
