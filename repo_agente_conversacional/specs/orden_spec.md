@@ -2,7 +2,7 @@
 
 > Cómo se trabaja este repositorio con Spec-Driven Development: qué archivo se usa en cada momento, cómo se relacionan specs, código y harness, y cuándo una feature está terminada.
 
-**Postura del proyecto**: <!-- IA: greenfield (repo nuevo) o brownfield (código existente). Pregúntalo si no es obvio. --> PENDIENTE
+**Postura del proyecto**: greenfield. El repo nace vacío; las fuentes son los documentos de contexto del proyecto, el framework de referencia (solo como guía de diseño) y las decisiones de la persona.
 
 ---
 
@@ -87,9 +87,9 @@ Viven en la tabla de `roadmap.md`: `not_started → in_progress → passing → 
 ## 7. Flujo por feature
 
 ### 1. Preparación
-- `main` limpio y la feature anterior cerrada o pausada explícitamente.
+- `develop` limpio y la feature anterior cerrada o pausada explícitamente.
 - Confirmar en `roadmap.md` que es la siguiente correcta.
-- `git checkout -b feature/NN-nombre`.
+- `git checkout develop && git checkout -b feature/NN-nombre`.
 
 ### 2. Especificación
 - Llenar `brief`, `plan`, `requirements` y `validation`, y revisar que sean coherentes entre sí.
@@ -102,14 +102,14 @@ Viven en la tabla de `roadmap.md`: `not_started → in_progress → passing → 
 - Completar en `review.md` la sección del gate y la evidencia por `CA-N`.
 
 ### 4. Validación independiente
-El revisor empieza con contexto limpio y lee la spec, el diff de toda la rama (`git diff main...HEAD` más lo no commiteado) y la evidencia. No recibe el resumen de quien implementó.
+El revisor empieza con contexto limpio y lee la spec, el diff de toda la rama (`git diff develop...HEAD` más lo no commiteado) y la evidencia. No recibe el resumen de quien implementó.
 
 ```bash
 # En la misma sesión (subagente con su propio contexto)
 @agent-revisor valida specs/features/NN-nombre/
 # En otra sesión
 claude -p --agent revisor "Valida specs/features/NN-nombre/"
-# En el PR: .github/workflows/revisor.yml (obliga a mergear solo si es required check en main)
+# En el PR a develop: el revisor de CI (obliga a mergear solo si es required check de develop)
 ```
 
 | Veredicto | Siguiente paso |
@@ -123,7 +123,7 @@ Cada vuelta queda en `review.md`: qué encontró, por qué pasó y qué se cambi
 ### 5. Cierre
 - Completar `review.md` con el veredicto.
 - Actualizar `CHANGELOG.md` si la entrega es relevante y `progress.md`.
-- PR y merge a `main`.
+- PR y merge a `develop`, que despliega a dev. Lo probado en dev pasa a `main` (producción) con un PR de `develop` a `main` que aprueba el equipo de plataforma.
 - Abrir un replanning si algo lo amerita.
 
 ## 8. Errores: de hallazgo a harness
@@ -156,6 +156,8 @@ Cada sesión empieza sin contexto: lo que no esté en el repo no existe para la 
 
 | Tipo | Patrón | Uso |
 |---|---|---|
+| Integración | `develop` | Recibe las features; se despliega en dev. |
+| Producción | `main` | Recibe `develop` cuando lo probado en dev se aprueba; se despliega en prod. |
 | Constitución | `init/constitucion` | Primera versión de la Constitución. |
 | Feature | `feature/NN-nombre` | Una feature y su spec. No se mezclan dos features. |
 | Replanning | `replanning/tema` | Cambios que afectan a la Constitución o al roadmap. |
