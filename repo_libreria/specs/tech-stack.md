@@ -52,9 +52,9 @@ ADLS no tiene cliente propio: se accede a través de las tablas y los volúmenes
 
 ## 4. Interfaces expuestas
 
-- **API pública de Python**: módulos y fábricas de §3. Versionado semántico; la feature 01 define qué cuenta como API pública.
+- **API pública de Python**: los nombres del `__all__` del `__init__.py` de cada módulo de primer nivel de §3 (`summa_ai_framework.<módulo>`), el nombre de la distribución y sus extras. Los submódulos y los nombres con `_` son internos y pueden cambiar sin aviso. Versionado semántico (definida en LIB-01).
 - **Versiones**: la primera versión publicada es `0.1.0` y las plantillas fijan la versión exacta. Mientras sea `0.x`, la API pública puede cambiar entre versiones menores, con nota en el changelog. `[inferido]`
-- **Extras por consumidor**: uno para el agente y otro para el workflow. Los nombres se fijan en la feature 01.
+- **Extras por consumidor**: `workflow` para `repo-workflow` y `agent` para `repo-agente-conversacional`, con el mismo nombre que su grupo de módulos de [[decisions]] DEC-002 (decisión de la persona, 2026-11-18).
 - **Esquemas de configuración** (pydantic): contrato con los archivos YAML de las plantillas. La definición del índice de AI Search (campos, filtrables, enlace al documento, página, deployment de embeddings, dimensiones y configuración semántica) es un solo esquema que usan las dos plantillas: es el contrato del índice entre ellas. El framework no fija modelos: cada caso de uso elige sus deployments en su configuración, y el de embeddings debe ser el mismo al indexar y al consultar (decisión de la persona, 2026-11-13). En la base, quien crea el índice y quien lo consulta no comparten esa definición (`BaseRef/cognitive/vectordb/azure_search.py:146-204` frente a `:325`).
 
 ## 5. Dependencias

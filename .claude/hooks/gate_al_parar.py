@@ -11,22 +11,13 @@ from pathlib import Path
 CLAUDE_DIR = Path(__file__).resolve().parents[1]
 PENDIENTE = CLAUDE_DIR / "gate_pendiente"  # lo crea post_edit.py
 GATE = CLAUDE_DIR.parent / "scripts" / "gate.py"
-VENV = CLAUDE_DIR.parent / ".venv"
-
-
-def interprete() -> str:
-    """Python del .venv del proyecto si existe: Claude Code puede lanzar el hook sin el venv activado."""
-    for python in (VENV / "Scripts" / "python.exe", VENV / "bin" / "python"):
-        if python.exists():
-            return str(python)
-    return sys.executable
 
 
 def main() -> int:
     if not PENDIENTE.exists():
         return 0
     r = subprocess.run(
-        [interprete(), str(GATE)],
+        [sys.executable, str(GATE)],  # gate.py elige el Python del .venv por su cuenta
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,

@@ -1,20 +1,22 @@
 # AGENTS.md
 
-<!-- IA: una o dos frases: qué es el proyecto y dónde vive el código. Sácalo de specs/mission.md y de la estructura del repo. -->
+Framework de IA de SUMMA: la librería `summa-ai-framework` y dos plantillas (workflow en Databricks y agente conversacional), que acabarán en repos propios de Azure DevOps. Mientras tanto comparten este repo y su harness.
 
 ## Ejecutar
 
-<!-- IA: comandos exactos para crear el entorno, instalar dependencias y ejecutar el proyecto. Solo lo verificado. -->
-
 ```
 uv venv && .venv\Scripts\activate
-uv pip install -r requirements-dev.txt   # incluye requirements.txt
+uv pip install -r requirements-dev.txt   # incluye requirements.txt y la librería en modo editable
 python scripts/gate.py
+python repo_libreria/scripts/humo_extras.py   # humo por extra; necesita uv y red, fuera del gate
 ```
 
 ## Arquitectura
 
-<!-- IA: lo que un agente no deduce leyendo un solo archivo: capas, convenciones, decisiones transversales. Enlaza specs/decisions.md en lugar de repetirlo. -->
+- `repo_libreria/`: librería `summa-ai-framework` (`src/summa_ai_framework/`, `tests/`, `scripts/`). El gate de la raíz la cubre, con cobertura mínima del 80 %; para ejecutar un solo test, `--no-cov`.
+- `repo_worklow/` y `repo_agente_conversacional/`: plantillas; por ahora solo specs.
+- Cada proyecto tiene sus specs en `<proyecto>/specs/`: allí están su `progress.md`, su `decisions.md` y sus features. Donde este archivo dice `specs/`, léase la del proyecto que tocas.
+- Fronteras de import de la librería: `repo_libreria/specs/decisions.md` (DEC-002). Un módulo nuevo se añade a un grupo en `repo_libreria/scripts/fronteras.py`.
 
 ## Variables de entorno
 

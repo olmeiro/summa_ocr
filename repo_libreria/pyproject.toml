@@ -1,0 +1,18 @@
+# Paquete summa-ai-framework. Las reglas del gate (ruff, mypy, pytest) viven en el
+# pyproject.toml de la raíz mientras la librería comparta harness con summa_ocr.
+
+[build-system]
+requires = ["setuptools>=69"]   # desde la 69 incluye py.typed en la wheel
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "summa-ai-framework"
+version = "0.1.0"
+description = "Capacidades comunes del framework de IA de SUMMA para sus plantillas de workflow y de agente."
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+# Un extra por consumidor (DEC-001); cada feature añade aquí las dependencias que introduce.
+workflow = []
+agent = []

@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+VENV = ROOT / ".venv"
 
 CHECKS = [
     ("Lint", ["ruff", "check", "."]),
@@ -18,11 +19,21 @@ CHECKS = [
 ]
 
 
+def interprete() -> str:
+    """Python del .venv del proyecto si existe: el gate funciona aunque nadie lo haya activado
+    (hook Stop, revisor, terminal sin activar). En CI no hay .venv y se usa el que lo lanzó."""
+    for python in (VENV / "Scripts" / "python.exe", VENV / "bin" / "python"):
+        if python.exists():
+            return str(python)
+    return sys.executable
+
+
 def main() -> int:
     fallos = []
+    python = interprete()
     for nombre, argumentos in CHECKS:
         print(f"\n[GATE] Ejecutando: {nombre}", flush=True)
-        resultado = subprocess.run([sys.executable, "-m", *argumentos], cwd=ROOT, check=False)
+        resultado = subprocess.run([python, "-m", *argumentos], cwd=ROOT, check=False)
         estado = "PASS" if resultado.returncode == 0 else "FAIL"
         print(f"[GATE] {estado}: {nombre}", flush=True)
         if resultado.returncode != 0:
