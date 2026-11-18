@@ -64,16 +64,23 @@ def git(*args: str) -> str:
     ).stdout
 
 
-def features(tocados: list[str], rama: str = "") -> list[str]:
-    """Carpetas specs/features/NN-nombre del cambio: las que toca y la de su rama feature/NN-nombre."""
-    rutas = map(PurePosixPath, tocados)
-    carpetas = {
-        "/".join(p.parts[:3])
-        for p in rutas
-        if len(p.parts) > 3 and p.parts[:2] == ("specs", "features") and p.parts[2] != "_plantilla"
-    }
+def features(tocados: list[str], rama: str = "", directorios: list[str] | None = None) -> list[str]:
+    """Carpetas [<proyecto>/]specs/features/NN-nombre del cambio: las que toca y la de su rama.
+
+    `directorios` son los del árbol del cambio: con ellos se encuentra la carpeta de la rama
+    en cualquier proyecto del repo. Sin ellos se supone specs/ en la raíz.
+    """
+    carpetas = set()
+    for partes in (PurePosixPath(t).parts for t in tocados):
+        for i in range(len(partes) - 3):  # specs/features/NN-nombre/ y al menos un archivo
+            if partes[i : i + 2] == ("specs", "features") and partes[i + 2] != "_plantilla":
+                carpetas.add("/".join(partes[: i + 3]))
     if m := RAMA_FEATURE.fullmatch(rama):  # un arreglo posterior de la feature no toca su spec
-        carpetas.add(f"specs/features/{m[1]}")
+        if directorios is None:
+            carpetas.add(f"specs/features/{m[1]}")
+        else:
+            sufijo = ("specs", "features", m[1])
+            carpetas.update(d for d in directorios if PurePosixPath(d).parts[-3:] == sufijo)
     return sorted(carpetas)
 
 
@@ -122,7 +129,8 @@ def seccion(titulo: str, cuerpo: str) -> str:
 def contexto(pedido: str) -> tuple[str, dict[str, str]]:
     rango = f"{BASE}...{CAMBIO}"
     tocados = git("diff", "--name-only", "--diff-filter=d", rango).splitlines()  # sin borrados
-    carpetas = features(tocados, os.environ.get("REVISOR_RAMA", ""))
+    directorios = git("ls-tree", "-r", "-d", "--name-only", CAMBIO).splitlines()
+    carpetas = features(tocados, os.environ.get("REVISOR_RAMA", ""), directorios)
     partes, criterios = [], {}
     for carpeta in carpetas:
         for spec in git("ls-tree", "--name-only", CAMBIO, f"{carpeta}/").splitlines():

@@ -22,6 +22,7 @@
 - Ningún valor externo se interpola en SQL ni en filtros: los identificadores de Unity Catalog se validan y los filtros de búsqueda se construyen desde una estructura. La base interpola ambos (`BaseRef/core/storage/unity.py:79-80`, `BaseRef/core/observability/workflow_tracker.py:292-311`).
 - Un fallo al escribir el registro de ejecución hace fallar el step. La base lo deja en un warning y la auditoría se pierde sin aviso (`BaseRef/core/observability/workflow_tracker.py:286`, `368`).
 - Docstrings, mensajes de error y commits en español, como el harness (`orden_spec.md` §11).
+- Los nombres de la API pública (clases, funciones, argumentos) y las claves de los YAML de configuración van en inglés, como los módulos (decisión de la persona, 2026-11-18).
 
 ## 3. Estructura de módulos
 
@@ -70,7 +71,12 @@ Previstas `[inferido]` de `BaseRef/core/pyproject.toml` y `BaseRef/cognitive/pyp
 
 ### Añadidas por features
 
-Ninguna todavía.
+| Feature | Dependencia | Dónde |
+|---|---|---|
+| LIB-01 | `setuptools>=69` | Build (`[build-system]`) |
+| LIB-01 | `pytest-cov` | Desarrollo (`requirements-dev.txt`) |
+| LIB-02 | `pydantic>=2.7,<3` y `PyYAML>=6.0.1,<7` | Obligatorias: las dos plantillas cargan configuración. Cotas inferiores probadas con la suite |
+| LIB-02 | `types-PyYAML` | Desarrollo |
 
 ## 6. Servicios externos
 
@@ -94,6 +100,11 @@ La librería no se despliega: cada plantilla instala una versión publicada en s
 - Los YAML de configuración referencian secretos por nombre (`${NOMBRE}`) y el loader los resuelve al cargar, con el proveedor que indique el propio YAML: variables de entorno o Key Vault. `[inferido]` de `BaseRef/core/config/loader.py:110-144` y `BaseRef/core/security/secrets.py:24-112`.
 - El proveedor por variables de entorno es el que usan los tests y el desarrollo local: el gate no llama a Key Vault.
 - Los valores resueltos son secretos: no aparecen en logs ni en mensajes de error.
+- Reglas de las referencias (LIB-02; las dos primeras son decisión de la persona, 2026-11-18):
+  - **Valor completo**: una referencia ocupa el valor entero (`api_key: ${AZURE_OPENAI_KEY}`). Un texto con `${` que no sea una referencia completa es un error.
+  - **Se resuelven después de parsear el YAML**: un secreto con caracteres de YAML no altera la estructura.
+  - **Solo en campos `SecretRef`**: las credenciales se declaran `SecretRef` en los esquemas. Un valor en claro en ese campo es un error, y también una referencia en un campo con otro tipo concreto (`str`, `int`…). Un campo `Any` u `object` la recibe como `SecretStr`, enmascarada.
+  - **La sección `secrets` no se resuelve**: dice cómo resolver el resto.
 
 ## 9. Seguridad
 
