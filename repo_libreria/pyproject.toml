@@ -10,7 +10,12 @@ name = "summa-ai-framework"
 version = "0.1.0"
 description = "Capacidades comunes del framework de IA de SUMMA para sus plantillas de workflow y de agente."
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+  # Comunes a los dos consumidores (DEC-001): cargan su configuración con config/
+  # Cotas inferiores comprobadas con la suite de la librería (LIB-02, review.md)
+  "pydantic>=2.7,<3",
+  "PyYAML>=6.0.1,<7",   # 6.0 no tiene wheel para Python 3.12 y su build falla
+]
 
 [project.optional-dependencies]
 # Un extra por consumidor (DEC-001); cada feature añade aquí las dependencias que introduce.
