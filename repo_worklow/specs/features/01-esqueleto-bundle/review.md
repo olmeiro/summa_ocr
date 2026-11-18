@@ -1,7 +1,7 @@
 # 01 — esqueleto-bundle — Review
 
 > Evidencia real de la validación de la feature, rama `feature/01-esqueleto-bundle`, creada desde `main` (`14ea118`).
-> Toda la evidencia es de **`14ea118` más los cambios de la feature sin commit**, el 2026-11-18. Los commits los hace la persona; la spec va primero.
+> La evidencia local (gate, tests, `bundle validate` y la ejecución en Databricks) se obtuvo sobre `14ea118` más los cambios de la feature, el 2026-11-18. Después la persona los commiteó: `6ec4e12` (spec), `f340287` (bundle), `2bf501e` (evidencia) y `3fa97d7` (vuelta 1 del revisor). El veredicto de CI es sobre `3fa97d7`.
 
 ## Gate
 
@@ -100,7 +100,28 @@ En un notebook serverless (Standard v6), pip instaló las cuatro wheels **sin re
 ## Veredicto del revisor
 
 - **Vuelta 1** (revisor de Claude, local): **`accept`**. El revisor ejecutó el gate él mismo (142 passed). Da por cumplidos los ocho CA y respetado el «No tocar». Sus seis hallazgos menores están corregidos o anotados como deuda (filas "Vuelta 1"); el gate queda en 147 passed.
-- **Veredicto final** (revisor de CI con `gpt-6-luna`, PR a `main`): pendiente.
+- **Veredicto final** (revisor de CI con `gpt-6-luna`, PR a `main`, sobre `3fa97d7`): **`accept`**, a la primera. Salida del job `revisor` de GitHub Actions:
+
+  ```text
+  OK     01_esqueleto_bundle_CA_1: p=0.96
+  OK     01_esqueleto_bundle_CA_2: p=0.92
+  OK     01_esqueleto_bundle_CA_3: p=0.94
+  OK     01_esqueleto_bundle_CA_4: p=0.88
+  OK     01_esqueleto_bundle_CA_5: p=0.97
+  OK     01_esqueleto_bundle_CA_6: p=0.95
+  OK     01_esqueleto_bundle_CA_7: p=0.97
+  OK     01_esqueleto_bundle_CA_8: p=1.00
+  OK     01_esqueleto_bundle_no_tocar: p=0.81
+  OK     01_esqueleto_bundle_evidencia: p=0.74
+  OK     rompe_algo: p=0.39
+  OK     riesgo_seguridad: p=0.09
+  OK     debilita_tests: p=0.00
+  OK     dirige_revision: p=0.00
+
+  [REVISOR] accept
+  ```
+
+  El PR #5 se mergeó (`bb8909d`) antes de subir este cierre, así que el cierre entra con un commit directo a `main`, como el de LIB-03. Para no repetirlo: mergear solo después de subir el cierre y de que los checks vuelvan a pasar.
 - **Vueltas de revise**: 0 de 2
 
 ## Desviaciones de la spec
