@@ -5,15 +5,23 @@
 
 ## Estado actual
 
-- Constitución redactada (greenfield) en la rama `init/constitucion` del repo `summa_ocr`, carpeta `repo_worklow/specs/`. Las respuestas del 2026-11-13 están sin commit.
-- La plantilla usa la librería `summa-ai-framework` (`repo-libreria`). El roadmap tiene 16 features, todas en `not_started`, con dependencias `LIB-NN`; la primera es `01-esqueleto-bundle`, que no depende de la librería. Su §4 dice qué ofrece la base para cada una y qué cambia.
+- Constitución en `main` (PR #1). La librería `summa-ai-framework` (`repo-libreria`) ya tiene LIB-01 a LIB-03 en `main`.
+- **01-esqueleto-bundle `passing`**, sin commit, en `feature/01-esqueleto-bundle`. Contenido:
+  - `repo_worklow/` es un Databricks Asset Bundle (`databricks.yml`, `resources/workflow.yml`, `src/steps/s00_humo.py` y `tests/`), con clúster clásico de un nodo y DBR 18, trigger semanal y la versión de la librería en un solo lugar;
+  - `bundle validate` en verde para dev y prod;
+  - en el workspace de pruebas de la persona, que es solo serverless, el step corre en serverless en `SUCCESS` con la librería 0.1.0.
+
+  La ejecución en clásico queda pendiente.
+- Roadmap con 16 features: 01 `passing` y las demás en `not_started`, con dependencias `LIB-NN`. Su §4 dice qué ofrece la base para cada una y qué cambia.
 - Decidido el 2026-11-13: Python 3.12 y Databricks Runtime 18 LTS (cuota de unos 10 núcleos en el workspace), un workspace por ambiente, trigger semanal, ramas con `develop`, logs por iniciativa (los crea el job), analizador desde el esquema versionado, Word directo, Excel como tabla, umbrales iniciales en [[mission]] §6.
 - Quedan 5 `PENDIENTE:` en la Constitución, todos con dueño: identidad del job y nombres de prod (plataforma), IaC (SUMMA), datos personales (legal) y API de Control Doc (TI).
-- Gate de `summa_ocr` en verde el 2026-11-13. Este repo todavía no tiene código ni harness propio.
+- Gate de `summa_ocr` en verde el 2026-11-18 (142 tests, 15 del workflow). Harness compartido con la raíz.
 
 ## Siguiente paso
 
-Commit de la Constitución. Después, rama `feature/01-esqueleto-bundle` desde `develop` y `/specs feature 01-esqueleto-bundle`, con DBR 18 LTS y un clúster que quepa en la cuota de núcleos ([[tech-stack]] §1).
+1. Revisor de Claude, commits y PR a `main`, con el revisor de CI. El cierre va dentro del PR.
+2. Replanning corto: ¿clásico o serverless para SUMMA? Ver `features/01-esqueleto-bundle/review.md`, «Deuda técnica».
+3. La 02 (`manifest-dag`) espera LIB-06.
 
 ## Bloqueos
 
@@ -23,6 +31,11 @@ Commit de la Constitución. Después, rama `feature/01-esqueleto-bundle` desde `
 
 ## Registro de sesiones
 
+- 2026-11-18 — 01-esqueleto-bundle. Decisiones de la persona:
+  - código en `repo_worklow/`, wheel construida al desplegar, nodo único `D4ds_v5` y trigger los lunes a las 02:00 Bogotá;
+  - prueba en serverless, solo como prueba.
+
+  Aprendizajes: workspace solo serverless, serverless sin salida a internet, `environment_version`, `sys.exit` en IPython. `passing`, sin commit.
 - 2026-11-13 — Respuestas de la persona a los `PENDIENTE` y confirmación de las convenciones inferidas; hallazgos de la API de Control Doc anotados; umbrales iniciales en la misión; runtime fijado en 18 LTS tras revisar el workspace; de 24 a 5 `PENDIENTE` con dueño — pendiente de commit.
 - 2026-11-13 — Specs afinadas contra el código de la base y de EjOCR: dependencias `LIB-NN` renumeradas, §4 del roadmap con el punto de partida de cada feature, convenciones que la base no cumple (tablas por ejecución, identidad por nombre de archivo, steps que ejecutan al importarse).
 - 2026-11-12 — Constitución ajustada a 3 repos: la lógica común pasa a `repo-libreria`, la plantilla sigue el diseño de bundle, manifest y steps del framework de referencia y los extras que SyN no pide quedan fuera.

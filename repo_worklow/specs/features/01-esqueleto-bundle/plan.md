@@ -28,7 +28,9 @@
 6. **Tests del gate**: leen los YAML con PyYAML (ya está en la librería) y la versión de `repo_libreria/pyproject.toml` con `tomllib`. No necesitan el CLI de Databricks.
 7. **Validación real**:
    - `bundle validate` de los dos targets, que puede lanzar el agente porque solo lee;
-   - `bundle deploy` y `bundle run` en dev, que lanza la persona: crean recursos y cuestan dinero.
+   - `bundle deploy` y `bundle run`, que lanza la persona porque crean recursos y cuestan dinero.
+
+   El workspace de pruebas resultó ser solo serverless (2026-11-18). La ejecución se hace con una variante serverless desechable, fuera del repo, con el mismo step y la misma wheel (CA-6). El bundle real queda validado, pero sin ejecución en clásico.
 
 ## Archivos a crear o modificar
 
@@ -51,7 +53,7 @@
 1. **Spec**, con la 01 en `in_progress`. Commit `docs(specs): define la spec de 01-esqueleto-bundle`.
 2. **Bundle y step**: los YAML, el step, los tests y el gate en verde. Commit `feat(bundle): esqueleto del bundle con job de humo`.
 3. **Validación**: `bundle validate` de los dos targets. Si Databricks pide ajustes, se corrigen aquí, que es lo que se quiere descubrir. Commit de lo que cambie.
-4. **Despliegue y ejecución en dev**, que lanza la persona. La salida va a `review.md`.
+4. **Ejecución en Databricks**, que lanza la persona. El `deploy -t dev` del bundle real lo rechaza el workspace de pruebas, que es solo serverless, así que se usa la variante serverless desechable. La salida y los aprendizajes van a `review.md`, y la regla de `sys.exit` a [[tech-stack]] §2.
 5. **Documentación** (`AGENTS.md`) y cierre:
    - revisor de Claude;
    - commits;
@@ -61,7 +63,7 @@
 ## Dependencias
 
 - Ninguna feature previa. La librería (LIB-01 a LIB-03) ya está en `main` y se construye desde `../repo_libreria`.
-- CLI de Databricks (v1.26 en la máquina de la persona) con el perfil de su workspace de pruebas. Allí se verificó (2026-11-18) que hay DBR 18 LTS, `Standard_D4ds_v5` y cuota de vCPU, y que la persona es administradora.
+- CLI de Databricks (v1.26 en la máquina de la persona) con el perfil de su workspace de pruebas. La API lista DBR 18 LTS y `Standard_D4ds_v5`, hay cuota de vCPU y la persona es administradora (2026-11-18). Aun así, el workspace solo admite serverless: crear el job clásico falla. Por eso la ejecución usa la variante serverless (CA-6).
 - uv en la máquina que despliega, porque construye la wheel. En esta máquina, `UV_LINK_MODE=copy`.
 
 ## Riesgos
@@ -71,6 +73,7 @@
 - **Una wheel con `whl:` no instala extras.** El extra `workflow` está vacío hoy. → Al llegar el feed se usará `pypi: summa-ai-framework[workflow]==...`.
 - **Restos de `build/` en `repo_libreria`** pueden colarse en la wheel, igual que en el humo de LIB-01. → El nombre exacto de la wheel evita usar una equivocada. El humo de la librería sigue limpiando `build/`.
 - **Costo**: cada ejecución levanta un nodo unos minutos. → Solo se lanza a mano en dev; el trigger va pausado.
+- **Workspace sin cómputo clásico**: ocurrió. → Variante serverless desechable para CA-6. La ejecución en clásico y la decisión clásico o serverless van a deuda y replanning (`review.md`).
 
 ## No tocar
 

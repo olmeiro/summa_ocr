@@ -12,10 +12,19 @@ python repo_libreria/scripts/humo_extras.py   # humo por extra; necesita uv y re
 python repo_libreria/scripts/integracion_keyvault.py   # Key Vault real (LIB-03): lo ejecuta la persona con az login y SUMMA_PRUEBA_KEYVAULT_URL del .env
 ```
 
+Bundle del workflow, desde `repo_worklow/`. El workspace sale del perfil del CLI de Databricks (`databricks auth login`); ningún host va en el repo.
+
+```
+databricks bundle validate -t dev -p <perfil>   # solo lee; también -t prod
+databricks bundle deploy -t dev -p <perfil>     # construye la wheel de ../repo_libreria y crea el job; lo lanza la persona
+databricks bundle run summa_workflow -t dev -p <perfil>   # levanta un clúster efímero: cuesta, lo lanza la persona
+```
+
 ## Arquitectura
 
 - `repo_libreria/`: librería `summa-ai-framework` (`src/summa_ai_framework/`, `tests/`, `scripts/`). El gate de la raíz la cubre, con cobertura mínima del 80 %; para ejecutar un solo test, `--no-cov`.
-- `repo_worklow/` y `repo_agente_conversacional/`: plantillas; por ahora solo specs.
+- `repo_worklow/`: plantilla del workflow. Es la raíz de un Databricks Asset Bundle (`databricks.yml`, `resources/`, `src/steps/`, `tests/`). El gate de la raíz cubre sus tests, que importan los steps como `steps.sNN_nombre`.
+- `repo_agente_conversacional/`: plantilla del agente; por ahora solo specs.
 - Cada proyecto tiene sus specs en `<proyecto>/specs/`: allí están su `progress.md`, su `decisions.md` y sus features. Donde este archivo dice `specs/`, léase la del proyecto que tocas.
 - Fronteras de import de la librería: `repo_libreria/specs/decisions.md` (DEC-002). Un módulo nuevo se añade a un grupo en `repo_libreria/scripts/fronteras.py`.
 
