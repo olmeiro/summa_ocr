@@ -4,6 +4,7 @@ import traceback
 from pathlib import Path
 
 import pytest
+import summa_ai_framework.config.loader as loader
 from summa_ai_framework.config import (
     ConfigError,
     ConfigModel,
@@ -11,6 +12,7 @@ from summa_ai_framework.config import (
     SummaConfig,
     load_config,
 )
+from summa_ai_framework.security import EnvSecretProvider, SecretError
 
 SECRETO = "s3cr3t-no-debe-verse"
 
@@ -136,7 +138,18 @@ def test_una_referencia_parcial_es_error(tmp_path: Path, monkeypatch: pytest.Mon
         ("solo-texto\n", "la raíz del YAML debe ser un mapa"),
         ("note: &a [*a]\n", "el YAML tiene alias circulares"),
         ("otra: 1\n", "- otra: Extra inputs are not permitted"),
-        ("secrets:\n  provider: azure_key_vault\n", "- secrets.provider: Input should be 'env'"),
+        (
+            "secrets:\n  provider: aws_secrets\n",
+            "- secrets.provider: Input should be 'env' or 'azure_key_vault'",
+        ),
+        (
+            "secrets:\n  provider: azure_key_vault\n",
+            "- secrets: Value error, vault_url es obligatoria con provider: azure_key_vault",
+        ),
+        (
+            "secrets:\n  provider: azure_key_vault\n  vault_url: kvema\n",
+            "- secrets.vault_url: Input should be a valid URL",
+        ),
     ],
     ids=[
         "inexistente",
@@ -149,6 +162,8 @@ def test_una_referencia_parcial_es_error(tmp_path: Path, monkeypatch: pytest.Mon
         "alias-circular",
         "clave-desconocida",
         "proveedor-no-soportado",
+        "key-vault-sin-url",
+        "key-vault-url-invalida",
     ],
 )
 def test_archivos_invalidos(tmp_path: Path, texto: str | bytes | None, esperado: str) -> None:
@@ -184,3 +199,70 @@ def test_la_ubicacion_incluye_el_indice(tmp_path: Path, monkeypatch: pytest.Monk
     monkeypatch.delenv("T2", raising=False)
     error = cargar_con_error(yaml_en(tmp_path, LISTA))
     assert "sources[1].token: no se encontró el secreto 'T2'" in str(error)
+
+
+VAULT_URL = "https://kv-prueba.vault.azure.net/"
+KEY_VAULT = f"secrets:\n  provider: azure_key_vault\n  vault_url: {VAULT_URL}\n" + SERVICIO
+
+
+def test_con_key_vault_usa_la_vault_url_del_yaml(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    creados: list[str] = []
+
+    class KeyVaultDoble:
+        def __init__(self, vault_url: str) -> None:
+            creados.append(vault_url)
+
+        def get_secret(self, name: str) -> str:
+            return SECRETO
+
+    monkeypatch.setattr(loader, "KeyVaultSecretProvider", KeyVaultDoble)
+    config = load_config(yaml_en(tmp_path, KEY_VAULT), PlantillaConfig)
+    assert creados == [VAULT_URL]
+    assert config.service is not None
+    assert config.service.api_key.get_secret_value() == SECRETO
+
+
+class ProveedorQueSeEvaluaFalso(EnvSecretProvider):
+    """Un proveedor válido aunque `bool()` dé False (p. ej. uno basado en un dict vacío)."""
+
+    def __bool__(self) -> bool:
+        return False
+
+
+@pytest.mark.parametrize(
+    "proveedor",
+    [EnvSecretProvider(), ProveedorQueSeEvaluaFalso()],
+    ids=["entorno", "se-evalua-falso"],
+)
+def test_el_proveedor_inyectado_sustituye_al_del_yaml(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, proveedor: EnvSecretProvider
+) -> None:
+    class NoDebeConstruirse:
+        def __init__(self, vault_url: str) -> None:
+            raise AssertionError("con provider inyectado no se construye Key Vault")
+
+    monkeypatch.setattr(loader, "KeyVaultSecretProvider", NoDebeConstruirse)
+    monkeypatch.setenv("CLAVE", SECRETO)
+    config = load_config(yaml_en(tmp_path, KEY_VAULT), PlantillaConfig, provider=proveedor)
+    assert config.service is not None
+    assert config.service.api_key.get_secret_value() == SECRETO
+
+
+def test_un_fallo_de_acceso_es_config_error_sin_valores(tmp_path: Path) -> None:
+    class PermisoParcial:
+        """Resuelve CLAVE y falla con OTRA: el error llega con un secreto ya leído en memoria."""
+
+        def get_secret(self, name: str) -> str:
+            if name == "CLAVE":
+                return SECRETO
+            raise SecretError(f"No se pudo leer el secreto '{name}' de Key Vault (Forbidden)")
+
+    texto = KEY_VAULT + "sources:\n  - name: a\n    token: ${OTRA}\n"
+    with pytest.raises(ConfigError) as error:
+        load_config(yaml_en(tmp_path, texto), PlantillaConfig, provider=PermisoParcial())
+    esperado = "sources[0].token: No se pudo leer el secreto 'OTRA' de Key Vault (Forbidden)"
+    assert esperado in str(error.value)
+    assert sin_excepcion_original(error.value)
+    assert SECRETO not in "".join(traceback.format_exception(error.value))
