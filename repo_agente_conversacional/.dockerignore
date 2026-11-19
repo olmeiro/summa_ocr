@@ -1,0 +1,7 @@
+# Solo entra a la imagen lo que copia el Dockerfile
+tests/
+specs/
+**/__pycache__/
+**/*.pyc
+**/.env
+**/.env.*
