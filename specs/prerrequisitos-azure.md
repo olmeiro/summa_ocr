@@ -120,14 +120,14 @@ Son propuestas para el `PENDIENTE` de plataforma sobre cómo instalar el paquete
 
 ### 6.4 Red y cómputo
 
-- **Clásico.** `dbr-analitica-summa-aba-qa` no tiene VNet propia, y sus nodos no tienen IP pública (*secure cluster connectivity*), así que salen a internet por la NAT que gestiona Databricks. El paso 1 del §7 probó que el clúster arranca, instala la wheel con sus dependencias y ejecuta el step. **Falta probar** que llega a Entra ID, Key Vault, Foundry, AI Search y Cosmos DB: es el paso 2.
+- **Clásico.** `dbr-analitica-summa-aba-qa` no tiene VNet propia, y sus nodos no tienen IP pública (*secure cluster connectivity*), así que salen a internet por la NAT que gestiona Databricks. El paso 1 del §7 probó que el clúster arranca, instala la wheel con sus dependencias y ejecuta el step. El paso 2 probó, sin credenciales, que llega por red a Entra ID, Key Vault, Foundry (OpenAI y Content Understanding), AI Search, Cosmos DB, PyPI y Azure DevOps, siempre por IP pública. **Falta la autenticación**: es el paso 4.
 - **Red pública de los servicios.** Foundry, AI Search y Cosmos DB la tienen activa. La del Key Vault no se sabe, porque el equipo no ve su grupo.
 - **Política de discos.** La Azure Policy «Restringir Discos Premium (SSD)» de SUMMA rechaza los discos cuya SKU no está en una lista permitida; su descripción da como ejemplo `Standard_LRS` y `StandardSSD_LRS`. El 2026-11-19 tumbó el job de humo al crear el clúster: con `Standard_D4ds_v5`, el disco del sistema operativo del nodo era Premium. Hay dos salidas:
   - un tamaño de VM sin almacenamiento Premium de los que ofrece el workspace: `Standard_D4d_v4`, `Standard_D3_v2` o `Standard_F4`. Con `Standard_D4d_v4`, el job de humo corrió en `SUCCESS` el 2026-11-19, y es el valor por defecto del bundle (DEC-001 del workflow);
   - que TI exima de la política al grupo de recursos administrado del workspace.
 
   Serverless no crea VMs en la suscripción de SUMMA, así que esta política no le afecta.
-- **Serverless.** Según la configuración del workspace, pip pasa por el proxy de PyPI de Databricks. La salida a otros servicios depende de las políticas de red de la cuenta; en el workspace de pruebas de DataKnow estaba cerrada.
+- **Serverless.** Según la configuración del workspace, pip pasa por el proxy de PyPI de Databricks. En SUMMA la salida a internet está abierta: el paso 2 llegó a los mismos servicios que el clásico, con un arranque de 5 segundos frente a unos 8 minutos. Esa salida la controlan las políticas de red de la cuenta de Databricks, así que plataforma podría cerrarla, como estaba en el workspace de pruebas de DataKnow.
 - **Cuota.** En East US 2 hay 10 vCPU libres en cada familia candidata (24 en Dv2), y el job de humo usa 4.
 
 ## 7. Desplegar pronto: el hito 0
@@ -137,7 +137,7 @@ La idea es desplegar ya lo que hay, aunque haga poco, y crecer sobre algo que co
 | Paso | Qué demuestra | Estado, o lo que falta | Lo lanza |
 |---|---|---|---|
 | 1. Workflow de humo en `dbr-analitica-summa-aba-qa` | Bundle, clúster clásico DBR 18 e instalación de la librería con sus dependencias. Cierra la deuda de clásico de 01-esqueleto-bundle | **Hecho el 2026-11-19**: `SUCCESS` con `Standard_D4d_v4` (§6.4) | La persona |
-| 2. Prueba de red desde el clúster | Que el clúster resuelve por DNS y abre HTTPS, sin credenciales, contra Entra ID, Key Vault, Foundry, AI Search, Cosmos DB y PyPI | Un notebook de prueba, que no se versiona | La persona |
+| 2. Prueba de red desde el clúster | Que el clúster resuelve por DNS y abre HTTPS, sin credenciales, contra Entra ID, Key Vault, Foundry, AI Search, Cosmos DB y PyPI | **Hecho el 2026-11-19**: desde clásico y desde serverless responden todos, y también Azure DevOps, por IP pública. La prueba no usa credenciales | La persona |
 | 3. Agente en `ca-summa-agentsfw-dev` | Imagen en el ACR, Container App y `/health` público | La imagen y el puerto 8000. Para bajar la imagen, `AcrPull` (lo asigna TI) o, como atajo, el usuario admin del ACR | La persona |
 | 4. Un secreto de prueba de punta a punta | El workflow y el agente leen un secreto del Key Vault | Un vault dedicado si se lee por el scope (§6.1), o roles por secreto si no (§4); decidir las identidades (§9); y el secreto de prueba, que en el vault compartido crea TI | La persona, después de TI |
 | 5. Librería desde el feed | Publicación (LIB-04) e instalación desde el feed | Acceso al proyecto de DevOps, el feed y su pipeline | Plataforma y la persona |
@@ -172,3 +172,4 @@ Los pasos 2 y 3 no necesitan a TI. LIB-04 ya es la siguiente feature de la libre
 | 10 | ¿En qué repo y con qué herramienta vive la IaC? (`PENDIENTE` del `alcance-inicial.md` del workflow y del agente) | SUMMA |
 | 11 | Nombres de los recursos: los de cada ambiente (`PENDIENTE` del `tech-stack.md` del agente, §7) y los de prod (`PENDIENTE` del `tech-stack.md` del workflow, §7). Los de dev del §3 son lo que existe hoy, no una decisión | Plataforma |
 | 12 | Acceso del equipo a `RecursosCompartidosQA`: sin él no puede verificar ni operar el Key Vault ni el ACR que el PDF da por existentes | TI de SUMMA |
+| 13 | ¿Cómputo clásico o serverless para el workflow? En SUMMA los dos llegan a los servicios (§6.4). Serverless arranca en segundos y no le afecta la política de discos, pero cambia el `tech-stack.md` del workflow (§1): es el replanning que ese proyecto ya tiene abierto | La persona y plataforma |

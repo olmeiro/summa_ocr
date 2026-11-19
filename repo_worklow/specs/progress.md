@@ -18,7 +18,7 @@
 
 ## Siguiente paso
 
-1. Replanning corto: ¿clásico o serverless para SUMMA? El clásico ya corre en SUMMA; falta que SUMMA y plataforma elijan el workspace del framework.
+1. Replanning corto: ¿clásico o serverless para SUMMA? Datos del 2026-11-19: los dos llegan a los servicios; serverless arranca en 5 s (el clásico, en unos 8 min) y no le afecta la política de discos. Falta además que SUMMA y plataforma elijan el workspace del framework.
 2. La 02 (`manifest-dag`) espera LIB-06.
 
 ## Bloqueos
@@ -30,13 +30,13 @@
   - **Prueba del 2026-11-18**: un notebook serverless del workspace de pruebas no resolvió por DNS ni `login.microsoftonline.com`, ni `*.vault.azure.net`, ni `management.azure.com`, ni `pypi.org`.
   - **La librería respondió bien**: devolvió `ConfigError` con la ubicación y el motivo, sin valores.
   - **Ese workspace solo sirve** para pruebas que no salen de Databricks.
-  - **2026-11-19, en `dbr-analitica-summa-aba-qa`**: el clúster clásico arranca, instala la wheel con sus dependencias y ejecuta el step. Falta probar que el clúster llega a Key Vault, Entra ID y los servicios de IA. Leer un secreto por el scope no lo prueba, porque esa lectura la hace el plano de control de Databricks.
+  - **2026-11-19, en `dbr-analitica-summa-aba-qa`**: el clúster clásico arranca, instala la wheel con sus dependencias y ejecuta el step. Una prueba de red sin credenciales llegó, desde clásico y desde serverless, a Entra ID, Key Vault, Foundry (OpenAI y Content Understanding), AI Search, Cosmos DB, PyPI y Azure DevOps, siempre por IP pública. En dev la red ya no bloquea; la red privada sigue siendo tarea de la IaC. Falta la autenticación: la identidad del job y el firewall del vault.
 
   Sigue abierta también la identidad del job (tech-stack §6): en Databricks no hay `az login`.
 
 ## Registro de sesiones
 
-- 2026-11-19 — Primera ejecución en SUMMA (`dbr-analitica-summa-aba-qa`). Con `Standard_D4ds_v5` falló al crear el clúster por la política de discos Premium; con `Standard_D4d_v4`, `SUCCESS` en clásico con DBR 18.3. Nuevo valor por defecto y DEC-001.
+- 2026-11-19 — Primera ejecución en SUMMA (`dbr-analitica-summa-aba-qa`). Con `Standard_D4ds_v5` falló al crear el clúster por la política de discos Premium; con `Standard_D4d_v4`, `SUCCESS` en clásico con DBR 18.3. Nuevo valor por defecto y DEC-001. Prueba de red sin credenciales: clásico y serverless llegan a todos los servicios por IP pública.
 - 2026-11-18 — 01-esqueleto-bundle. Decisiones de la persona:
   - código en `repo_worklow/`, wheel construida al desplegar, nodo único `D4ds_v5` y trigger los lunes a las 02:00 Bogotá;
   - prueba en serverless, solo como prueba.
