@@ -35,6 +35,7 @@ docker run -d -e APP_ENVIRONMENT=local -p 8000:8000 --name summa-agente summa-ag
 - `repo_worklow/`: plantilla del workflow. Es la raíz de un Databricks Asset Bundle (`databricks.yml`, `resources/`, `src/steps/`, `tests/`). El gate de la raíz cubre sus tests, que importan los steps como `steps.sNN_nombre`.
 - `repo_agente_conversacional/`: plantilla del agente. Es una API FastAPI (`app/`: `main.py` con la fábrica `create_app`, `core/settings.py` y `api/`), con `tests/`, `requirements.txt` y `Dockerfile`. El gate de la raíz cubre sus tests, que importan la API como `app`.
 - Cada proyecto tiene sus specs en `<proyecto>/specs/`: allí están su `progress.md`, su `decisions.md` y sus features. Donde este archivo dice `specs/`, léase la del proyecto que tocas.
+- `specs/prerrequisitos-azure.md` (raíz) es transversal: recursos, identidades y permisos de Azure de los tres proyectos, y el orden para desplegar pronto.
 - Fronteras de import de la librería: `repo_libreria/specs/decisions.md` (DEC-002). Un módulo nuevo se añade a un grupo en `repo_libreria/scripts/fronteras.py`.
 
 ## Variables de entorno
