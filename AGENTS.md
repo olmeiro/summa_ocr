@@ -20,11 +20,20 @@ databricks bundle deploy -t dev -p <perfil>     # construye la wheel de ../repo_
 databricks bundle run summa_workflow -t dev -p <perfil>   # levanta un clúster efímero: cuesta, lo lanza la persona
 ```
 
+API del agente, desde `repo_agente_conversacional/`. La app no lee `.env`: las variables `APP_*` las pone quien la ejecuta. `APP_ENVIRONMENT` es obligatoria (`local`, `dev` o `prod`), y `APP_DOCS=true` activa `/docs`.
+
+```
+$env:APP_ENVIRONMENT = "local"; $env:APP_DOCS = "true"
+uvicorn --factory app.main:create_app --port 8000          # http://localhost:8000/health y /docs
+docker build -t summa-agente:local .
+docker run -d -e APP_ENVIRONMENT=local -p 8000:8000 --name summa-agente summa-agente:local
+```
+
 ## Arquitectura
 
 - `repo_libreria/`: librería `summa-ai-framework` (`src/summa_ai_framework/`, `tests/`, `scripts/`). El gate de la raíz la cubre, con cobertura mínima del 80 %; para ejecutar un solo test, `--no-cov`.
 - `repo_worklow/`: plantilla del workflow. Es la raíz de un Databricks Asset Bundle (`databricks.yml`, `resources/`, `src/steps/`, `tests/`). El gate de la raíz cubre sus tests, que importan los steps como `steps.sNN_nombre`.
-- `repo_agente_conversacional/`: plantilla del agente; por ahora solo specs.
+- `repo_agente_conversacional/`: plantilla del agente. Es una API FastAPI (`app/`: `main.py` con la fábrica `create_app`, `core/settings.py` y `api/`), con `tests/`, `requirements.txt` y `Dockerfile`. El gate de la raíz cubre sus tests, que importan la API como `app`.
 - Cada proyecto tiene sus specs en `<proyecto>/specs/`: allí están su `progress.md`, su `decisions.md` y sus features. Donde este archivo dice `specs/`, léase la del proyecto que tocas.
 - Fronteras de import de la librería: `repo_libreria/specs/decisions.md` (DEC-002). Un módulo nuevo se añade a un grupo en `repo_libreria/scripts/fronteras.py`.
 

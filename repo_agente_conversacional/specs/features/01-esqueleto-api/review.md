@@ -1,0 +1,132 @@
+# 01 — esqueleto-api — Review
+
+> Evidencia real de la validación de la feature, rama `feature/01-esqueleto-api`, creada desde `main` (`34240f8`).
+> La evidencia es de **`34240f8` más los cambios de la feature sin commit**, el 2026-11-18; la de CA-6, del 2026-11-19. Los commits los hace la persona; la spec va primero.
+
+## Gate
+
+`python scripts/gate.py`:
+
+```text
+[GATE] PASS: Lint
+[GATE] PASS: Formato
+[GATE] PASS: Tipos
+161 passed
+[GATE] PASS: Tests
+[GATE] Todas las comprobaciones pasaron.
+```
+
+## Cumplimiento por criterio
+
+| CA | Estado | Evidencia |
+|---|---|---|
+| CA-1 | cumple | `test_health_responde_el_ambiente` |
+| CA-2 | cumple | `test_ready_tras_arrancar` y `test_ready_antes_de_arrancar_es_503` |
+| CA-3 | cumple | `test_documentacion_apagada_por_defecto` y `test_documentacion_con_app_docs`, cada uno con `/docs`, `/redoc` y `/openapi.json` |
+| CA-4 | cumple | `test_ambiente_obligatorio_y_valido[ausente, staging, mayusculas]` y `test_importar_main_no_lee_el_entorno`; además, `test_lee_los_ajustes_del_entorno` |
+| CA-5 | cumple | Gate de arriba (ruff con `FAST`, `ASYNC` y `S`; mypy estricto sobre `app/` y `tests/`). `health` y `ready` son `async` |
+| CA-6 | cumple | `docker build` y `docker run` de la imagen final en la máquina de la persona: `/health` responde, `healthy`, `appuser` y `/app` sin escritura, abajo |
+| CA-7 | cumple | Arranque real con uvicorn, abajo |
+| CA-8 | cumple | Diff de `AGENTS.md`: "Arquitectura" y "Ejecutar" (uvicorn y Docker) |
+
+### Tests del agente
+
+`python -m pytest repo_agente_conversacional/tests --no-cov -v`:
+
+```text
+test_api_salud.py::test_health_responde_el_ambiente PASSED
+test_api_salud.py::test_ready_tras_arrancar PASSED
+test_api_salud.py::test_ready_antes_de_arrancar_es_503 PASSED
+test_api_salud.py::test_documentacion_apagada_por_defecto[/docs] PASSED
+test_api_salud.py::test_documentacion_apagada_por_defecto[/redoc] PASSED
+test_api_salud.py::test_documentacion_apagada_por_defecto[/openapi.json] PASSED
+test_api_salud.py::test_documentacion_con_app_docs[/docs] PASSED
+test_api_salud.py::test_documentacion_con_app_docs[/redoc] PASSED
+test_api_salud.py::test_documentacion_con_app_docs[/openapi.json] PASSED
+test_api_salud.py::test_lee_los_ajustes_del_entorno PASSED
+test_api_salud.py::test_ambiente_obligatorio_y_valido[ausente] PASSED
+test_api_salud.py::test_ambiente_obligatorio_y_valido[staging] PASSED
+test_api_salud.py::test_ambiente_obligatorio_y_valido[mayusculas] PASSED
+test_api_salud.py::test_importar_main_no_lee_el_entorno PASSED
+14 passed
+```
+
+Los tests no dependen de las variables `APP_*` de quien los ejecuta (hallazgo 1 de la vuelta 1). Comprobado el 2026-11-19 con `APP_DOCS=true APP_ENVIRONMENT=prod python -m pytest repo_agente_conversacional/tests --no-cov -q`:
+
+```text
+14 passed in 0.73s
+```
+
+### CA-7: arranque real con uvicorn
+
+Un script arranca `python -m uvicorn --factory app.main:create_app --app-dir repo_agente_conversacional --port 8765`, llama a los endpoints y detiene el proceso:
+
+```text
+### APP_ENVIRONMENT=local
+  GET /health -> 200 {"status":"ok","environment":"local"}
+  GET /ready -> 200 {"status":"ready"}
+  GET /docs -> 404
+  log: INFO:     Application startup complete. | INFO:     Uvicorn running on http://127.0.0.1:8765
+### APP_ENVIRONMENT=local APP_DOCS=true
+  GET /health -> 200 {"status":"ok","environment":"local"}
+  GET /ready -> 200 {"status":"ready"}
+  GET /docs -> 200
+  log: INFO:     Application startup complete. | INFO:     Uvicorn running on http://127.0.0.1:8765
+```
+
+### CA-6: imagen Docker
+
+Imagen final, tras los cambios de la vuelta 1 del revisor: `/app` es de root y `.dockerignore` excluye `.env*` en cualquier carpeta. La persona lo ejecutó en su máquina el 2026-11-19, con Docker Desktop 4.99.0 (Engine 29.9.3), desde `repo_agente_conversacional/`. Es una sola secuencia sobre un solo contenedor:
+
+```text
+> docker rm -f summa-agente
+summa-agente
+> docker build -t summa-agente:local .
+ => [1/6] FROM docker.io/library/python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b
+ => CACHED [4/6] RUN pip install -r requirements.txt
+ => [5/6] COPY app/ ./app/
+ => [6/6] RUN useradd --create-home --shell /usr/sbin/nologin appuser
+ => => naming to docker.io/library/summa-agente:local
+[+] Building 3.7s (12/12) FINISHED
+> docker run -d -e APP_ENVIRONMENT=local -p 8000:8000 --name summa-agente summa-agente:local
+8e1c03bbdbdaa2c60f5739293b8bb243b10faf39884e84ecb29e6f0967b3289d
+> curl.exe -s http://localhost:8000/health
+{"status":"ok","environment":"local"}
+> docker inspect --format "{{.State.Health.Status}}" summa-agente
+healthy
+> docker exec summa-agente whoami
+appuser
+> docker exec summa-agente touch /app/prueba
+touch: cannot touch '/app/prueba': Permission denied
+```
+
+Con la imagen anterior, que tenía `chown -R appuser:appuser /app`, CA-6 también se cumplió. Sin `APP_DOCS`, `/docs` respondió 404 en el contenedor (`{"detail":"Not Found"}`), como pide CA-3.
+
+## Errores encontrados al validar
+
+| Error | Causa | Corrección | Destino en el harness |
+|---|---|---|---|
+| — | — | — | — |
+
+## Veredicto del revisor
+
+- **Vuelta 1** (revisor de Claude, local, 2026-11-19): `revise`. Gate en verde y CA-1 a CA-8 cumplen. Hallazgos y lo que se hizo con cada uno:
+  1. Corregido: los tests de documentación por defecto dependían de `APP_DOCS` en el entorno de quien los ejecuta. Un fixture `autouse` limpia `APP_*` en `test_api_salud.py`.
+  2. Corregido: `progress.md` decía que el agente no tenía código.
+  3. Corregido: la transcripción de CA-6 mezclaba dos contenedores. Se repitió con la imagen final en una sola secuencia.
+  4. Pendiente del cierre: anclar la evidencia al hash del commit.
+  5. Corregido: la salud fuera de `api/v1/` es una desviación de [[tech-stack]] §3; ahora consta en "Desviaciones".
+  6. Corregido: `/app` era propiedad de `appuser`; ahora es de root.
+  7. Corregido: `.dockerignore` solo excluía `.env*` en la raíz del contexto.
+  8. Descartado: modelos Pydantic y `responses=` para la salud. Ningún CA los pide.
+- **Vuelta 2** (revisor de Claude, local, 2026-11-19): `accept`. Gate en verde. Un hallazgo menor: el replanning de [[tech-stack]] §3 faltaba en "Deuda técnica"; ya está. El revisor no pudo ejecutar los tests con `APP_DOCS=true` porque su hook solo permite git y el gate; esa comprobación la hizo el agente que implementa (arriba).
+- **Veredicto final** (revisor de CI con `gpt-6-luna`, PR a `main`): pendiente.
+- **Vueltas de revise**: 1 de 2
+
+## Desviaciones de la spec
+
+- **Con [[tech-stack]] §3**: `/health` y `/ready` viven en `app/api/health.py` y cuelgan de la raíz, no de `api/v1/`, porque los usan las sondas de Container Apps (Reglas de negocio de `requirements.md`). Esta feature no toca la Constitución (`plan.md`, «No tocar»), así que §3 se corrige en un replanning.
+
+## Deuda técnica y temas para replanning
+
+- **[[tech-stack]] §3**: la estructura de módulos pone la salud en `api/v1/`. Hay que corregirla para que coincida con `app/api/health.py`, en la raíz de rutas (ver "Desviaciones").
