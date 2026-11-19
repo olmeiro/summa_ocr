@@ -120,6 +120,27 @@ Con la imagen anterior, que tenía `chown -R appuser:appuser /app`, CA-6 tambié
   7. Corregido: `.dockerignore` solo excluía `.env*` en la raíz del contexto.
   8. Descartado: modelos Pydantic y `responses=` para la salud. Ningún CA los pide.
 - **Vuelta 2** (revisor de Claude, local, 2026-11-19): `accept`. Gate en verde. Un hallazgo menor: el replanning de [[tech-stack]] §3 faltaba en "Deuda técnica"; ya está. El revisor no pudo ejecutar los tests con `APP_DOCS=true` porque su hook solo permite git y el gate; esa comprobación la hizo el agente que implementa (arriba).
+- **Revisor local con `gpt-6-luna`** (lo lanzó la persona el 2026-11-19, `REVISOR_BASE=main`, sobre `51b5df0`): **`accept`**, a la primera. Salida de `revisor_local.txt`:
+
+  ```text
+  OK     01_esqueleto_api_CA_1: p=1.00
+  OK     01_esqueleto_api_CA_2: p=1.00
+  OK     01_esqueleto_api_CA_3: p=0.98
+  OK     01_esqueleto_api_CA_4: p=0.99
+  OK     01_esqueleto_api_CA_5: p=0.97
+  OK     01_esqueleto_api_CA_6: p=1.00
+  OK     01_esqueleto_api_CA_7: p=1.00
+  OK     01_esqueleto_api_CA_8: p=1.00
+  OK     01_esqueleto_api_no_tocar: p=0.93
+  OK     01_esqueleto_api_evidencia: p=0.79
+  OK     rompe_algo: p=0.16
+  OK     riesgo_seguridad: p=0.07
+  OK     debilita_tests: p=0.00
+  OK     dirige_revision: p=0.00
+
+  [REVISOR] accept
+  ```
+
 - **Veredicto final** (revisor de CI con `gpt-6-luna`, PR a `main`): pendiente.
 - **Vueltas de revise**: 1 de 2
 

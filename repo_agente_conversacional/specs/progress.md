@@ -12,7 +12,7 @@
   - el gate de la raíz ya lo cubre;
   - CA-1 a CA-8 cumplen: gate en verde (161 tests, 14 del agente) y CA-7 con uvicorn en local el 2026-11-18; CA-6 con Docker Desktop en la máquina de la persona el 2026-11-19 (`healthy`, usuario `appuser`).
 
-  Revisor de Claude: `accept` en la vuelta 2 (2026-11-19). Faltan los commits y el PR.
+  Commits `cce2c36` a `51b5df0`. Revisor de Claude: `accept` en la vuelta 2, y revisor local con `gpt-6-luna`: `accept` (2026-11-19). Faltan el PR y el cierre.
 - El roadmap tiene 10 features: la 01 `in_progress` y las demás `not_started`, con dependencias `LIB-NN`. Su §4 dice qué ofrece la base para cada una y qué cambia.
 - Decidido el 2026-11-13: Python 3.12, tokens de Bot Framework, la sesión nace con el primer mensaje, todos ven todo el índice, historial de 90 días, solo logs, ramas con `develop`, umbrales iniciales en [[mission]] §6.
 - Quedan 3 `PENDIENTE:` en la Constitución, todos con dueño: identidad del Container App y nombres de recursos (plataforma) e IaC (SUMMA).
@@ -20,7 +20,7 @@
 
 ## Siguiente paso
 
-1. La persona hace los commits del `plan.md`, lanza el revisor local con `gpt-6-luna` y abre el PR. El cierre se sube **antes** del merge, con la evidencia anclada al hash del commit.
+1. La persona hace push de `feature/01-esqueleto-api` y abre el PR a `main`. El cierre (`/specs cerrar 01-esqueleto-api`) se sube **antes** del merge, con la evidencia anclada al hash del commit.
 2. Replanning de [[tech-stack]] §3: la salud vive en la raíz de rutas, no en `api/v1/` (deuda de 01-esqueleto-api).
 
 ## Bloqueos
