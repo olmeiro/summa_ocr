@@ -73,7 +73,7 @@ def test_cluster_efimero_de_un_nodo_con_dbr_18() -> None:
     assert nuevo["spark_version"] == "${var.spark_version}"
     assert VARIABLES["spark_version"] == "18.x-scala2.13"
     assert nuevo["node_type_id"] == "${var.node_type_id}"
-    assert VARIABLES["node_type_id"] == "Standard_D4ds_v5"
+    assert VARIABLES["node_type_id"] == "Standard_D4d_v4"  # sin almacenamiento Premium (DEC-001)
     assert nuevo["num_workers"] == 0
     assert nuevo["spark_conf"]["spark.databricks.cluster.profile"] == "singleNode"
 

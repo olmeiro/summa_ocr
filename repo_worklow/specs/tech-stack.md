@@ -9,7 +9,7 @@
 ## 1. Lenguaje y framework
 
 - **Lenguaje y versión**: Python 3.12 en Azure Databricks, como `repo-libreria` (decisión de la persona, 2026-11-13). Databricks Runtime **18 LTS** (Spark 4.1.0, Scala 2.13, Python 3.12.3; soporte hasta el 2029-06-10) (decisión de la persona, 2026-11-13). Es el que ofrece el workspace `dbr-celula-ia`, sin directiva de clúster que restrinja versiones (verificado por la persona en Cómputo → Crear nuevo cómputo, 2026-11-13). La base usa 17.3 (`BaseRef/workflow/databricks.yml:66`).
-- **Tamaño del clúster**: la cuenta tiene unos 10 núcleos de CPU disponibles (aviso de cuota del workspace, 2026-11-13). El clúster efímero del job debe caber en ese cupo: por ejemplo, driver y un worker `Standard_D4ds_v5` (4 núcleos y 16 GB cada uno), sin autoescalado por encima de la cuota. Si hace falta más, se pide aumento de cuota a plataforma.
+- **Tamaño del clúster**: la cuenta tiene unos 10 núcleos de CPU disponibles (aviso de cuota del workspace, 2026-11-13). El clúster efímero del job debe caber en ese cupo: por ejemplo, driver y un worker `Standard_D4d_v4` (4 núcleos y 16 GB cada uno), sin autoescalado por encima de la cuota. Si hace falta más, se pide aumento de cuota a plataforma. El tipo de nodo no admite almacenamiento Premium, por la política de discos de SUMMA ([[decisions]] DEC-001).
 - **Framework**: Databricks Jobs desplegados con Databricks Asset Bundles (SyN, arquitectura §1 y etapa 5). Cada step es un script Python ejecutado como tarea del job, en un clúster efímero compartido por todas las tareas. `[inferido]` de `BaseRef/workflow/docs/architecture.md`.
 - **Librería del framework**: `summa-ai-framework` (`repo-libreria`) con su extra del workflow, en una versión fija instalada en el clúster desde el feed de Azure Artifacts de SUMMA (decisión de la persona).
 - **Gestor de dependencias**: `uv` con `requirements.txt` y `requirements-dev.txt` para el desarrollo local y el gate (`AGENTS.md`); en el clúster, las librerías que declara el job.
@@ -83,7 +83,7 @@ Ninguna todavía.
 
 | Entorno | Recursos | Notas |
 |---|---|---|
-| dev | Workspace de Databricks propio (`adb-370235171185436.16.azuredatabricks.net`, por confirmar que es el de dev), catálogo de Unity Catalog, Storage y AI Search de desarrollo | Desarrollo y pruebas; recibe lo que entra a `develop` |
+| dev | Workspace de Databricks propio (`dbr-celula-ia`, por confirmar que es el de dev), catálogo de Unity Catalog, Storage y AI Search de desarrollo | Desarrollo y pruebas; recibe lo que entra a `develop` |
 | prod | Otro workspace y los mismos recursos, de producción | Procesa los documentos autorizados (SyN, componente C); recibe `main` |
 
 Un workspace de Databricks por ambiente (decisión de la persona, 2026-11-13). PENDIENTE (dueño: plataforma): nombres de los recursos de prod.

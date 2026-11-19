@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2026-11-19 — Nodo sin discos Premium
+
+### Fixed
+- El clúster efímero pasa de `Standard_D4ds_v5` a `Standard_D4d_v4`. La Azure Policy de discos de SUMMA rechazaba el disco Premium que Databricks pone a las VM que lo admiten, y el clúster no llegaba a crearse ([[decisions]] DEC-001).
+
+### Notes
+- Primera ejecución en clásico: el job de humo corre en `SUCCESS` en `dbr-analitica-summa-aba-qa`, con DBR 18.3, Python 3.12.3 y la librería 0.1.0.
+
 ## 2026-11-18 — 01-esqueleto-bundle
 
 ### Added
