@@ -5,4 +5,6 @@ pytest
 pytest-cov
 types-PyYAML   # mypy estricto sobre summa_ai_framework.config
 -e ./repo_libreria   # summa-ai-framework editable: el gate la prueba como la instala un consumidor
+-r repo_agente_conversacional/requirements.txt   # API del agente (FastAPI)
+httpx   # TestClient de FastAPI en los tests del agente
 openai>=3.26,<4   # scripts/revisor_ci.py: el harness lo necesita aunque el proyecto no use OpenAI
