@@ -14,7 +14,7 @@
 
 ## Siguiente paso
 
-1. La persona commitea el cierre de 01-esqueleto-api en `main` y lo sube.
+1. Hito 0 en SUMMA (`specs/prerrequisitos-azure.md`, en la raíz): probar Cosmos DB y el modelo de chat desde Databricks, y desplegar la plantilla en `ca-summa-agentsfw-dev` (paso 3).
 2. Replanning de [[tech-stack]] §3: la salud vive en la raíz de rutas, no en `api/v1/` (deuda de 01-esqueleto-api).
 3. Spec de 02-configuracion (`/specs feature 02-configuracion`), en `feature/02-configuracion`. Depende de 01 y de LIB-03, y las dos están en `main`.
 
@@ -26,6 +26,7 @@
 
 ## Registro de sesiones
 
+- 2026-11-19 — Guía de prerrequisitos de Azure en la raíz. En SUMMA ya existen, para el agente, `ca-summa-agentsfw-dev` (con la imagen de ejemplo, ingress al puerto 80 y sin identidad), el ACR `pocopenaicontainerregistry`, Cosmos DB y AI Search. Desde Databricks, con claves, funcionan los embeddings y AI Search.
 - 2026-11-19 — Docker Desktop instalado en la máquina de la persona (antes hubo que activar "Virtual Machine Platform" con `wsl --install` como administrador); CA-6 de 01-esqueleto-api en verde. Revisor de Claude: `revise` en la vuelta 1 (tests dependientes de `APP_DOCS`, imagen endurecida) y `accept` en la vuelta 2. `accept` de `gpt-6-luna` en local y en CI; PR #6 mergeado y cierre en `main`. Decidido: desde ahora la feature se cierra en su rama antes de abrir el PR (`AGENTS.md` y skill `specs`).
 - 2026-11-13 — Respuestas de la persona a los `PENDIENTE`: adaptador de Teams en la plantilla (feature 08), MCP fuera, sesión al primer mensaje, token de Bot Framework, umbrales iniciales; de 19 a 3 `PENDIENTE` con dueño — pendiente de commit.
 - 2026-11-13 — Specs afinadas contra el código de la base: dependencias `LIB-NN` renumeradas, §4 del roadmap con el punto de partida de cada feature, valores por defecto seguros y respuesta con fuentes como datos.
