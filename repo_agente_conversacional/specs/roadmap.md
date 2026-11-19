@@ -37,7 +37,7 @@ Pipelines de Azure DevOps y guía de onboarding. **Salida**: la plantilla se des
 
 | ID | Nombre | Fase | Depende de | Estado | Carpeta |
 |---|---|---|---|---|---|
-| 01 | esqueleto-api: app FastAPI (`main.py`, `settings.py`), endpoints de salud, `Dockerfile`, `app/` en el gate | 1 | — | in_progress | `features/01-esqueleto-api/` |
+| 01 | esqueleto-api: app FastAPI (`main.py`, `settings.py`), endpoints de salud, `Dockerfile`, `app/` en el gate | 1 | — | accepted | `features/01-esqueleto-api/` |
 | 02 | configuracion: `config_<ambiente>.yaml` con referencias a Key Vault, cargado con la librería | 1 | 01, LIB-03 | not_started | `features/02-configuracion/` |
 | 03 | auth-jwt: middleware que valida el JWT de Bot Framework con el validador de la librería y rechaza sin token válido | 1 | 02, LIB-13 | not_started | `features/03-auth-jwt/` |
 | 04 | sesiones: la sesión nace con el primer mensaje; endpoints para listar sesiones y leer su historial en Cosmos DB, con 90 días de retención; cada usuario accede solo a las suyas | 1 | 03, LIB-14 | not_started | `features/04-sesiones/` |

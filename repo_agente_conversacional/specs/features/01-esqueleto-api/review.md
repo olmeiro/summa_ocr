@@ -1,17 +1,17 @@
 # 01 — esqueleto-api — Review
 
-> Evidencia real de la validación de la feature, rama `feature/01-esqueleto-api`, creada desde `main` (`34240f8`).
-> La evidencia es de **`34240f8` más los cambios de la feature sin commit**, el 2026-11-18; la de CA-6, del 2026-11-19. Los commits los hace la persona; la spec va primero.
+> Evidencia real de la validación de la feature, rama `feature/01-esqueleto-api` (commits `cce2c36` a `2ef959c`), creada desde `main` (`34240f8`) y mergeada con el PR #6 (`f9c21ac`).
+> Los tests, CA-6 y CA-7 se ejecutaron sobre el árbol de trabajo antes de los commits, el 2026-11-18 y el 2026-11-19. Ese código es el que entró en `a8dec27` (app y tests) y `dde48f5` (imagen); después solo cambiaron archivos `.md`. El gate se repitió sobre `f9c21ac`.
 
 ## Gate
 
-`python scripts/gate.py`:
+`python scripts/gate.py` sobre `f9c21ac` (`main` tras el merge), el 2026-11-19:
 
 ```text
 [GATE] PASS: Lint
 [GATE] PASS: Formato
 [GATE] PASS: Tipos
-161 passed
+161 passed in 15.27s
 [GATE] PASS: Tests
 [GATE] Todas las comprobaciones pasaron.
 ```
@@ -106,7 +106,11 @@ Con la imagen anterior, que tenía `chown -R appuser:appuser /app`, CA-6 tambié
 
 | Error | Causa | Corrección | Destino en el harness |
 |---|---|---|---|
-| — | — | — | — |
+| Vuelta 1: con `APP_DOCS=true` en el entorno de quien ejecuta los tests, fallaban los de documentación apagada por defecto | `AppSettings` se creaba al importar el módulo y leía `APP_DOCS` | Fixture `autouse` que borra `APP_*`, y `AppSettings` dentro de cada test. Comprobado con `APP_DOCS=true APP_ENVIRONMENT=prod` | puntual (corrección en el test) |
+| Vuelta 1: `appuser` podía escribir en `/app` | `chown -R appuser:appuser /app` sobraba | `/app` queda de root; `touch /app/prueba` da `Permission denied` (CA-6) | puntual |
+| Vuelta 1: `.dockerignore` solo excluía `.env*` en la raíz del contexto | Patrones sin `**/` | `**/.env` y `**/.env.*` | puntual |
+| Vuelta 1 (evidencia): la transcripción de CA-6 mezclaba dos contenedores | Se copiaron comprobaciones de un contenedor recreado con `APP_DOCS=true` | CA-6 repetido en una sola secuencia | puntual |
+| Proceso: el PR #6 se mergeó antes de subir el cierre | La persona mergea en cuanto CI da `accept`. Es la tercera vez: LIB-03, 01-esqueleto-bundle y esta | El cierre entra con un commit directo a `main` | Decisión de la persona (2026-11-19): la feature se cierra en su rama antes de abrir el PR, como ya decía §7.4. Queda en `AGENTS.md` (revisor local) y en el modo `cerrar` de la skill `specs` |
 
 ## Veredicto del revisor
 
@@ -141,7 +145,28 @@ Con la imagen anterior, que tenía `chown -R appuser:appuser /app`, CA-6 tambié
   [REVISOR] accept
   ```
 
-- **Veredicto final** (revisor de CI con `gpt-6-luna`, PR a `main`): pendiente.
+- **Veredicto final** (revisor de CI con `gpt-6-luna`, PR #6 a `main`, sobre `2ef959c`): **`accept`**, a la primera. Salida del job `revisor` de GitHub Actions, paso "Revisión":
+
+  ```text
+  OK     01_esqueleto_api_CA_1: p=1.00
+  OK     01_esqueleto_api_CA_2: p=1.00
+  OK     01_esqueleto_api_CA_3: p=0.99
+  OK     01_esqueleto_api_CA_4: p=0.99
+  OK     01_esqueleto_api_CA_5: p=0.98
+  OK     01_esqueleto_api_CA_6: p=0.99
+  OK     01_esqueleto_api_CA_7: p=1.00
+  OK     01_esqueleto_api_CA_8: p=1.00
+  OK     01_esqueleto_api_no_tocar: p=0.97
+  OK     01_esqueleto_api_evidencia: p=0.81
+  OK     rompe_algo: p=0.13
+  OK     riesgo_seguridad: p=0.05
+  OK     debilita_tests: p=0.00
+  OK     dirige_revision: p=0.00
+
+  [REVISOR] accept
+  ```
+
+  El PR #6 se mergeó (`f9c21ac`) antes de subir este cierre, así que el cierre entra con un commit directo a `main`, como en LIB-03 y en 01-esqueleto-bundle.
 - **Vueltas de revise**: 1 de 2
 
 ## Desviaciones de la spec
