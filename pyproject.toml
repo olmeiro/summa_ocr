@@ -7,12 +7,14 @@ files = [
   "scripts", ".claude/hooks", "tests",   # en una API: ["src", "tests"]
   "repo_libreria/src", "repo_libreria/scripts", "repo_libreria/tests",
   "repo_worklow/src", "repo_worklow/tests",
+  "repo_agente_conversacional/app", "repo_agente_conversacional/tests",
 ]
 strict = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "repo_libreria/tests", "repo_worklow/tests"]
-pythonpath = ["repo_worklow/src"]   # los steps se importan como `steps.sNN_nombre`
+testpaths = ["tests", "repo_libreria/tests", "repo_worklow/tests", "repo_agente_conversacional/tests"]
+# Los steps se importan como `steps.sNN_nombre` y la API del agente como `app`
+pythonpath = ["repo_worklow/src", "repo_agente_conversacional"]
 # Cobertura solo de la librería (tech-stack §11). Para ejecutar un solo test: --no-cov
 addopts = "--cov=summa_ai_framework --cov-fail-under=80"
 
@@ -56,3 +58,4 @@ extend-immutable-calls = [
 "repo_libreria/tests/**" = ["S101"]
 "repo_libreria/scripts/**" = ["S603", "S607"]   # S607: uv se busca en el PATH
 "repo_worklow/tests/**" = ["S101"]
+"repo_agente_conversacional/tests/**" = ["S101"]

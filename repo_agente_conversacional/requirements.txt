@@ -1,0 +1,4 @@
+# Dependencias de ejecución de la API del agente. La librería summa-ai-framework[agent] entra en la 02.
+fastapi>=0.115,<1
+uvicorn>=0.30,<1
+pydantic-settings>=2.4,<3
