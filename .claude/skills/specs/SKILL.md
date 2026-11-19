@@ -55,10 +55,12 @@ Sin modo o con uno desconocido, muestra los tres modos de abajo y pregunta cuál
 3. **Revisión independiente.** Lanza el subagente `revisor` pasándole solo `specs/features/$1/`, sin tu resumen ni tu valoración.
 4. **Veredicto.** Cópialo a `review.md` junto con el número de vuelta, y actúa según `orden_spec.md` §7.4:
    - `accept`:
+     - pide a la persona que lance el revisor local con `gpt-6-luna` sobre la feature commiteada (`AGENTS.md`, Harness) y copia `revisor_local.txt` a `review.md`; si da `revise`, trátalo como un `revise` del subagente;
      - márcala `accepted` en `roadmap.md`;
      - actualiza `CHANGELOG.md` si la entrega es relevante (§12);
      - llena "Deuda técnica y temas para replanning";
-     - si algo cambia la Constitución o el roadmap, propón abrir un replanning.
+     - si algo cambia la Constitución o el roadmap, propón abrir un replanning;
+     - el cierre va en la rama de la feature, y el PR se abre después, con el cierre dentro.
    - `revise`:
      - anota en "Errores encontrados al validar" lo que pide el revisor y su destino (§8), y para;
      - el código se corrige fuera de esta skill, y después se vuelve a ejecutar `/specs cerrar $1`;
