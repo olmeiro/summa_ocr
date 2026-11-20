@@ -20,7 +20,7 @@
 
 ## Bloqueos
 
-- Crear el repo en Azure DevOps, mover el harness y portar el gate y el revisor a Azure Pipelines (con `develop` como rama de integración).
+- Crear el repo en Azure DevOps, mover el harness y portar el gate y el revisor a Azure Pipelines (con `develop` como rama de integración). Mientras tanto se trabaja en `OlmeDK/summa_framework_v0`, temporal, donde GitHub no impide el merge aunque `gate` o `revisor` fallen (plan gratuito, repo privado), así que la regla la cumple quien mergea: no se mergea hasta que los dos estén en verde (`repo_worklow/specs/replanning/2026-11-20-serverless-y-repo.md`).
 - Contrato del índice con `repo-workflow` antes de la feature 07.
 - App Registration del bot y Azure Bot Service con el canal Teams (TI de SUMMA) antes de la feature 08.
 

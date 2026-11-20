@@ -55,7 +55,7 @@ Una sola librería con estas reglas:
 - **Fecha**: 2026-11-13
 - **Introducida en**: Constitución (`init/constitucion`)
 - **Aplica a**: `src/summa_ai_framework/`, los extras de `pyproject.toml` y el test de fronteras de LIB-01
-- **Estado**: vigente; confirmada por la persona el 2026-11-13
+- **Estado**: vigente; confirmada por la persona el 2026-11-13. La comprobación negativa del humo cambió el 2026-11-20 (`replanning/2026-11-20-orden-y-humo.md`)
 - **Reemplaza**: la regla 3 de DEC-001 y su verificación de fronteras
 
 ### Contexto
@@ -92,7 +92,7 @@ Tres grupos de módulos:
 ### Cómo se verifica
 
 - **Fronteras de import**: un test recorre los imports y falla si un módulo de workflow importa uno de agente o al revés, o si un módulo común importa de cualquiera de los dos. Lo introduce LIB-01.
-- **Humo por extra** de DEC-001: con solo el extra del workflow no se pueden importar `auth` ni `agents`, y con solo el del agente no se importan los módulos de workflow.
+- **Humo por extra** de DEC-001: con solo un extra instalado, no está instalada ninguna distribución exclusiva del otro extra (las que declara y no son obligatorias ni del extra propio). Cambiado en `replanning/2026-11-20-orden-y-humo.md`; antes comprobaba que los módulos del otro grupo no se pudieran importar, lo que falla con los módulos que solo usan dependencias comunes. Lo implementa LIB-06.
 
 ---
 

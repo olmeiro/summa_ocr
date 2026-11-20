@@ -67,15 +67,14 @@ def test_targets_dev_y_prod_sin_host() -> None:
     assert all("host" not in t.get("workspace", {}) for t in targets.values())
 
 
-def test_cluster_efimero_de_un_nodo_con_dbr_18() -> None:
-    (cluster,) = JOB["job_clusters"]
-    nuevo = cluster["new_cluster"]
-    assert nuevo["spark_version"] == "${var.spark_version}"
-    assert VARIABLES["spark_version"] == "18.x-scala2.13"
-    assert nuevo["node_type_id"] == "${var.node_type_id}"
-    assert VARIABLES["node_type_id"] == "Standard_D4d_v4"  # sin almacenamiento Premium (DEC-001)
-    assert nuevo["num_workers"] == 0
-    assert nuevo["spark_conf"]["spark.databricks.cluster.profile"] == "singleNode"
+def test_tareas_en_serverless_sin_cluster() -> None:
+    assert "job_clusters" not in JOB  # DEC-002
+    (entorno,) = JOB["environments"]
+    assert entorno["spec"]["environment_version"] == "${var.environment_version}"
+    assert VARIABLES["environment_version"] == "6"
+    for tarea in JOB["tasks"]:
+        assert tarea["environment_key"] == entorno["environment_key"]
+        assert not {"job_cluster_key", "new_cluster", "existing_cluster_id"} & tarea.keys()
 
 
 def test_trigger_semanal_pausado_en_dev_y_activo_en_prod() -> None:
@@ -100,9 +99,9 @@ def test_version_de_la_libreria_en_un_solo_lugar() -> None:
     pyproject = WORKFLOW.parent / "repo_libreria" / "pyproject.toml"
     version = tomllib.loads(pyproject.read_text(encoding="utf-8"))["project"]["version"]
     assert VARIABLES["libreria_version"] == version
-    (tarea,) = JOB["tasks"]
+    (entorno,) = JOB["environments"]
     wheel = "../../repo_libreria/dist/summa_ai_framework-${var.libreria_version}-py3-none-any.whl"
-    assert tarea["libraries"] == [{"whl": wheel}]
+    assert entorno["spec"]["dependencies"] == [wheel]
     textos = [
         p.read_text(encoding="utf-8")
         for p in [WORKFLOW / "databricks.yml", *RECURSOS.glob("*.yml")]

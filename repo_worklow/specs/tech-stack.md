@@ -8,11 +8,11 @@
 
 ## 1. Lenguaje y framework
 
-- **Lenguaje y versión**: Python 3.12 en Azure Databricks, como `repo-libreria` (decisión de la persona, 2026-11-13). Databricks Runtime **18 LTS** (Spark 4.1.0, Scala 2.13, Python 3.12.3; soporte hasta el 2029-06-10) (decisión de la persona, 2026-11-13). Es el que ofrece el workspace `dbr-celula-ia`, sin directiva de clúster que restrinja versiones (verificado por la persona en Cómputo → Crear nuevo cómputo, 2026-11-13). La base usa 17.3 (`BaseRef/workflow/databricks.yml:66`).
-- **Tamaño del clúster**: la cuenta tiene unos 10 núcleos de CPU disponibles (aviso de cuota del workspace, 2026-11-13). El clúster efímero del job debe caber en ese cupo: por ejemplo, driver y un worker `Standard_D4d_v4` (4 núcleos y 16 GB cada uno), sin autoescalado por encima de la cuota. Si hace falta más, se pide aumento de cuota a plataforma. El tipo de nodo no admite almacenamiento Premium, por la política de discos de SUMMA ([[decisions]] DEC-001).
-- **Framework**: Databricks Jobs desplegados con Databricks Asset Bundles (SyN, arquitectura §1 y etapa 5). Cada step es un script Python ejecutado como tarea del job, en un clúster efímero compartido por todas las tareas. `[inferido]` de `BaseRef/workflow/docs/architecture.md`.
-- **Librería del framework**: `summa-ai-framework` (`repo-libreria`) con su extra del workflow, en una versión fija instalada en el clúster desde el feed de Azure Artifacts de SUMMA (decisión de la persona).
-- **Gestor de dependencias**: `uv` con `requirements.txt` y `requirements-dev.txt` para el desarrollo local y el gate (`AGENTS.md`); en el clúster, las librerías que declara el job.
+- **Lenguaje y versión**: Python 3.12 en Azure Databricks, como `repo-libreria` (decisión de la persona, 2026-11-13). La versión de Python la fija el environment serverless del job: `environment_version: "6"` trae Python 3.12.3 ([[decisions]] DEC-002). Hasta el 2026-11-20 era un clúster clásico con Databricks Runtime 18 LTS; la base usa 17.3 (`BaseRef/workflow/databricks.yml:66`).
+- **Cómputo**: serverless (decisión de la persona, 2026-11-20; [[decisions]] DEC-002). No hay tipo de nodo, cuota de núcleos ni política de discos que respetar. Si algún job vuelve a un clúster clásico, aplica DEC-001.
+- **Framework**: Databricks Jobs desplegados con Databricks Asset Bundles (SyN, arquitectura §1 y etapa 5). Cada step es un script Python ejecutado como tarea del job, con un environment serverless compartido por todas las tareas. La base usa un clúster efímero (`BaseRef/workflow/docs/architecture.md`).
+- **Librería del framework**: `summa-ai-framework` (`repo-libreria`) con su extra del workflow, en una versión fija instalada en el environment del job desde el feed de Azure Artifacts de SUMMA (decisión de la persona).
+- **Gestor de dependencias**: `uv` con `requirements.txt` y `requirements-dev.txt` para el desarrollo local y el gate (`AGENTS.md`); en Databricks, las dependencias que declara el environment del job.
 
 ## 2. Convenciones de código
 
@@ -35,7 +35,7 @@
 SyN, etapa 5, pide `bundle.yml`, ConfigFiles, step registry, manifest/DAG y tablas de logs. La disposición es `[inferido]` de `BaseRef/workflow/`:
 
 ```text
-databricks.yml            # bundle (el bundle.yml de SyN): targets dev/prod, clúster efímero, variables
+databricks.yml            # bundle (el bundle.yml de SyN): targets dev/prod, environment serverless, variables
 resources/workflow.yml    # job: tareas, dependencias, librerías, timeouts y trigger
 config/
 ├─ config_<ambiente>.yaml # ConfigFile: fuente, extracción, chunking, embeddings e índice
@@ -76,7 +76,7 @@ Ninguna todavía.
 | Azure OpenAI (AI Foundry) | Embeddings y la tarea "Process Files con OpenAI" (SyN, etapa 5). Los deployments los elige cada caso de uso en su ConfigFile; el de embeddings es parte del contrato del índice (decisión de la persona, 2026-11-13) | Ídem |
 | Azure AI Search | Creación y carga de índices | Ídem |
 | Azure Key Vault | Claves de API de los servicios y credenciales de las fuentes | Identidad del job (ver la fila de Databricks) |
-| Azure Artifacts | Instalación de la librería en el clúster | El feed no existe todavía; cómo se instala sin credenciales está PENDIENTE en el `tech-stack.md` §9 de `repo-libreria` (dueño: plataforma). La base deja la credencial del feed en claro en el bundle (`BaseRef/workflow/databricks.yml:109`): no es guía |
+| Azure Artifacts | Instalación de la librería en el environment del job | El feed no existe todavía; cómo se instala sin credenciales está PENDIENTE en el `tech-stack.md` §9 de `repo-libreria` (dueño: plataforma). La base deja la credencial del feed en claro en el bundle (`BaseRef/workflow/databricks.yml:109`): no es guía |
 | Fuentes por API (Control Doc la primera) | Documentos y metadatos, en solo lectura | Las define cada caso de uso; para Control Doc, API Key (SyN, etapa 1) |
 
 ## 7. Entornos
@@ -99,7 +99,7 @@ Un workspace de Databricks por ambiente (decisión de la persona, 2026-11-13). P
 
 ## 9. Seguridad
 
-- **Red**: Service Endpoints en el firewall del Storage Account y subredes de Databricks autorizadas (SyN, etapa 2).
+- **Red**: SyN, etapa 2, pide Service Endpoints en el firewall del Storage Account y subredes de Databricks autorizadas, que es el modelo del clúster clásico. Con serverless el cómputo no corre en subredes de SUMMA, así que ese modelo no aplica ([[decisions]] DEC-002). `[inferido]`: el acceso privado a Storage y Key Vault se configura en la cuenta de Databricks, con una network connectivity configuration (NCC); la salida a internet la controlan aparte las políticas de red de la cuenta. Lo resuelve plataforma o la IaC.
 - **Permisos**: lectura y escritura en ADLS solo a través de Unity Catalog (SyN, etapa 2).
 - **Fuentes**: acceso de solo lectura con credencial de servicio, nunca con cookies ni sesión de un usuario (EjOCR, `src/api_client.py:26-28`, es lo que no se repite).
 - **Bundle**: `databricks.yml` y `resources/` no contienen credenciales; el gate o la revisión lo comprueban.
@@ -121,7 +121,7 @@ Un workspace de Databricks por ambiente (decisión de la persona, 2026-11-13). P
 
 ## 12. CI/CD y despliegue
 
-- **Plataforma**: Azure DevOps, para repos y pipelines (decisión de la persona). El gate y el revisor del harness se portan a Azure Pipelines al mover el harness.
+- **Plataforma**: Azure DevOps, para repos y pipelines (decisión de la persona). El gate y el revisor del harness se portan a Azure Pipelines al mover el harness. Mientras tanto, el repo vive en GitHub, en `OlmeDK/summa_framework_v0` (temporal, decisión de la persona, 2026-11-20).
 - **Pipelines** (SyN, etapa 5; `BaseRef/workflow/docs/deployment.md`): validación del bundle, despliegue automático (dev → prod), validación de los jobs tras desplegar y rollback si falla. El pipeline de la base solo declara ramas y variables por ambiente; sus pasos están en una plantilla externa que no está en `project-context/` (`BaseRef/workflow/Pipeline/workflow-pipeline.yml:28-38`): este se escribe desde cero.
 - **Ramas**: `feature/NN-nombre` → `develop`, que despliega en dev → `main`, que despliega en prod (decisión de la persona, 2026-11-13); es el flujo feature → develop → prod que pide SyN, etapa 5.
 - **Aprobación de producción**: el equipo de plataforma aprueba el paso a prod, con una aprobación por grupo en el pipeline (decisión de la persona, 2026-11-13).

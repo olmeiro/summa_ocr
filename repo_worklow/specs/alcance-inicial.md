@@ -24,7 +24,7 @@ Cada caso de uso clona este repo y configura sus propios jobs (SyN, etapa 7).
 
 La plantilla aporta bundle, manifest, steps y configuración. La lógica común la entrega `repo-libreria` (decisión de la persona). Lo pide SyN (arquitectura §1 y etapa 5), salvo donde se indica:
 
-- **Bundle**: `databricks.yml` con targets dev y prod y clúster efímero, y `resources/workflow.yml` con las tareas, sus dependencias y la librería en versión fija.
+- **Bundle**: `databricks.yml` con targets dev y prod y cómputo serverless (DEC-002), y `resources/workflow.yml` con las tareas, sus dependencias y la librería en versión fija.
 - **Manifest/DAG**: `requires`/`provides` de cada step y zona medallion; el registro de steps es la carpeta `src/steps/`. La plantilla aporta el manifest, el patrón de step y el test que lo compara con las dependencias del job; la lógica que lo lee es de la librería.
 - **ConfigFile** por iniciativa y por ambiente: fuente, extracción, chunking, embeddings e índice.
 - **Logs y auditoría**: tablas de logs en Unity Catalog, propias de la iniciativa, con esquema y particionado definidos, `run_id`, timestamps y causa de error por ejecución y por documento, con su tarea de creación y mantenimiento; esa tarea también crea los esquemas `<iniciativa>_<capa>` si no existen (decisión de la persona, 2026-11-13).
@@ -44,7 +44,7 @@ La plantilla aporta bundle, manifest, steps y configuración. La lógica común 
 ### No entra
 
 - **Clientes de servicios y lógica genérica**: Content Understanding, chunking, AI Search, fuentes HTTP, almacenamiento en Unity Catalog, lectura del manifest y trazabilidad están en `repo-libreria`.
-- **Dockerfile**: SyN, etapa 1, lo lista en la estructura base de este repo, pero los jobs corren en clústeres de Databricks desplegados con el bundle. `[inferido]`
+- **Dockerfile**: SyN, etapa 1, lo lista en la estructura base de este repo, pero los jobs corren en el cómputo serverless de Databricks, desplegados con el bundle. `[inferido]`
 - **El conector concreto de Control Doc**, su configuración y su esquema de contratos: van en el repo del caso de uso (decisión de la persona; SyN, etapa 7).
 - **Indexar el corpus de Control Doc** y ajustar su chunking y su perfil de scoring (SyN, etapa 7).
 - **Validación humana** de los campos extraídos y su carga en sistemas destino (`Control Doc/Campo Extraccion de Contratos.xlsx`, hoja "Caso de Uso", Alcance).

@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2026-11-20 — Cómputo serverless
+
+### Changed
+- El job corre en un environment serverless (`environment_version: "6"`) en vez de un clúster clásico efímero ([[decisions]] DEC-002, que reemplaza a DEC-001). La wheel de la librería pasa a ser dependencia del environment. `bundle validate` pasa en dev y prod.
+
+### Notes
+- Primera ejecución en serverless en `dbr-analitica-summa-aba-qa`: run `386609408515617` del 2026-11-20, `SUCCESS` en unos 40 s, con Python 3.12.3, runtime `client.6.5` y la librería 0.1.0. Desplegado desde una exportación sin `.git`.
+
 ## 2026-11-19 — Nodo sin discos Premium
 
 ### Fixed

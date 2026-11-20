@@ -18,12 +18,9 @@ variables:
   libreria_version:
     description: Versión de summa-ai-framework. Único lugar donde se fija (tech-stack §8).
     default: "0.1.0"
-  spark_version:
-    description: Databricks Runtime del clúster efímero (tech-stack §1).
-    default: "18.x-scala2.13"
-  node_type_id:
-    description: Tipo de nodo del clúster efímero de un nodo. Sin almacenamiento Premium, por la política de discos de SUMMA (DEC-001).
-    default: Standard_D4d_v4
+  environment_version:
+    description: Versión del environment serverless de las tareas; fija Python y las librerías base (DEC-002).
+    default: "6"
   trigger_cron:
     description: Trigger semanal en formato Quartz (segundo minuto hora día mes día-semana).
     default: "0 0 2 ? * MON"

@@ -5,7 +5,7 @@
 
 ## Estado actual
 
-- En GitHub (`origin/main`): Constitución (PR #1), LIB-01 (#2), LIB-02 (#3) y LIB-03 (#4), con merge commits. El cierre de la 03 va como commit directo a `main` (decisión de la persona). Mientras el CI solo mire `main`, las features van por PR directo a `main`; `develop` llega con Azure DevOps.
+- El repo vive en GitHub, en `OlmeDK/summa_framework_v0`, temporal hasta Azure DevOps; ahí GitHub no impide el merge aunque `gate` o `revisor` fallen (plan gratuito, repo privado), así que la regla la cumple quien mergea: no se mergea hasta que los dos estén en verde. Los PRs #1 a #9 quedaron en el repo anterior: Constitución (PR #1), LIB-01 (#2), LIB-02 (#3) y LIB-03 (#4), con merge commits. El cierre de la 03 va como commit directo a `main` (decisión de la persona). Mientras el CI solo mire `main`, las features van por PR directo a `main`; `develop` llega con Azure DevOps.
 - Paquete `summa-ai-framework`, Python 3.12, cobertura mínima del 80 %; plataforma aprueba las versiones. Extras `workflow` y `agent`. El código vive en `repo_libreria/`, el gate de la raíz lo cubre y `requirements-dev.txt` lo instala editable.
 - **LIB-01, LIB-02 y LIB-03 `accepted`** y en `main`. **Fase 1 completa salvo LIB-04**, bloqueada por el feed:
   - `config`: `load_config(path, schema, *, provider=None)`, `SummaConfig`, `ConfigModel`, `SecretRef` y `ConfigError`;
@@ -19,19 +19,16 @@
 
 ## Siguiente paso
 
-La persona decide pasar a las plantillas (2026-11-18): las 01 de `repo_worklow/` (`01-esqueleto-bundle`) y de `repo_agente_conversacional/` (`01-esqueleto-api`). Ninguna depende de la librería, y sus features de configuración ya pueden usar LIB-02 y LIB-03. Continuidad de cada plantilla: su propio `specs/progress.md`.
-
-La librería sigue con LIB-05 después del replanning pendiente.
-
-Antes de LIB-05, replanning de la comprobación negativa del humo (`features/01-esqueleto-paquete/review.md`, "Deuda técnica").
+LIB-06 (`/specs feature 06-contexto-workflow`), en `feature/06-contexto-workflow`. Se adelanta a LIB-05 y su plan incluye el cambio de la comprobación negativa del humo (`replanning/2026-11-20-orden-y-humo.md`). Después, LIB-05.
 
 ## Bloqueos
 
-- Crear el repo en Azure DevOps, mover el harness y portar el gate y el revisor a Azure Pipelines. Al moverlo, el harness raíz (`AGENTS.md`, `README.md`, workflows de CI) debe pasar de `main` a `develop` como rama de integración ([[orden_spec]] §10).
+- Crear el repo en Azure DevOps, mover el harness y portar el gate y el revisor a Azure Pipelines. Mientras tanto se trabaja en `OlmeDK/summa_framework_v0`. Al moverlo, el harness raíz (`AGENTS.md`, `README.md`, workflows de CI) debe pasar de `main` a `develop` como rama de integración ([[orden_spec]] §10).
 - Feed de Azure Artifacts: no existe; lo crea el equipo de plataforma. Bloquea LIB-04.
 
 ## Registro de sesiones
 
+- 2026-11-20 — Replanning: LIB-06 antes de LIB-05, y la comprobación negativa del humo mira las distribuciones instaladas (`replanning/2026-11-20-orden-y-humo.md`). El repo pasa, temporalmente, a `OlmeDK/summa_framework_v0`.
 - 2026-11-18 — LIB-03 cerrada: el revisor de CI con `gpt-6-luna` dio `revise` por una contradicción de la spec en «No tocar» (`.env.template`) y `accept` tras corregirla. PR #4 mergeado; cierre en commit directo a `main`. Siguiente: las plantillas.
 - 2026-11-18 — PRs #1 a #3 mergeados en `main` (el revisor de CI del #3 falló por arranque: su arreglo viajaba en el propio PR). LIB-03: decisiones de la persona (`_` → `-` en Key Vault, prueba contra su Key Vault `kvema`, veredicto final del revisor de CI), spec, `KeyVaultSecretProvider` y proveedor inyectable, gate, humo y cotas en verde — sin commit; falta la integración.
 - 2026-11-18 — LIB-02: decisiones de la persona (API y claves YAML en inglés, referencias solo como valor completo), spec, `config` y `security`, gate en verde, humo y cotas mínimas en verde (PyYAML sube a 6.0.1). Revisor: vuelta 1 `revise` (archivo no UTF-8, formato de ubicación, alias circulares), corregida; vuelta 2 `revise` (fecha imposible y anidamiento profundo en el parser), corregida. La persona elige `gpt-6-luna` para la vuelta 3: `revisor_ci.py` ya encuentra las specs de cada proyecto (CA-10). Vuelta 3 `accept`; 02 `accepted`, CHANGELOG y salida local en `revisor_local.txt`.

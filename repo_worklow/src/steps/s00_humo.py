@@ -1,4 +1,4 @@
-"""Step de humo: comprueba en el clúster el ambiente, el runtime y la librería instalada.
+"""Step de humo: comprueba en Databricks el ambiente, el runtime y la librería instalada.
 
 No ejecuta nada al importarse (tech-stack §2): `main()` lee los argumentos y llama a `ejecutar()`.
 """

@@ -17,29 +17,20 @@ resources:
         timezone_id: ${var.trigger_zona}
         pause_status: ${var.trigger_pausa}
 
-      job_clusters:
-        - job_cluster_key: cluster_efimero
-          new_cluster:
-            spark_version: ${var.spark_version}
-            node_type_id: ${var.node_type_id}
-            num_workers: 0 # un solo nodo: más workers exige quitar el perfil singleNode
-            data_security_mode: SINGLE_USER
-            azure_attributes:
-              availability: ON_DEMAND_AZURE
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: local[*]
-            custom_tags:
-              ResourceClass: SingleNode
+      # Cómputo serverless (DEC-002): las tareas comparten este environment
+      environments:
+        - environment_key: serverless
+          spec:
+            environment_version: ${var.environment_version}
+            dependencies:
+              - ../../repo_libreria/dist/summa_ai_framework-${var.libreria_version}-py3-none-any.whl
 
       tasks:
         - task_key: s00_humo
-          description: Comprueba el runtime y la librería instalada en el clúster
-          job_cluster_key: cluster_efimero
+          description: Comprueba el runtime y la librería instalada en el environment
+          environment_key: serverless
           spark_python_task:
             python_file: ../src/steps/s00_humo.py
             parameters:
               - --ambiente
               - ${bundle.target}
-          libraries:
-            - whl: ../../repo_libreria/dist/summa_ai_framework-${var.libreria_version}-py3-none-any.whl
